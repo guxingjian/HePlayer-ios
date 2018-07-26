@@ -279,7 +279,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     _pVideoCodec = pCodec;
     _pFrame = av_frame_alloc();
     _videoPkt = av_packet_alloc();
-    if(_pVideoCodecCtx->pix_fmt != AV_PIX_FMT_YUV420P)
+    if(_pVideoCodecCtx->pix_fmt != AV_PIX_FMT_YUV420P && _pVideoCodecCtx->pix_fmt != AV_PIX_FMT_NONE)
     {
         _yuvFrame = av_frame_alloc();
         
@@ -452,13 +452,13 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
             step = pic->pts - self->frame_last_pts;
             self->frame_timer += step;
             double diff = self->frame_timer - self->_audio_clock;
-            if(diff < -20)
+            if(diff < -50)
             {
-                step = step - 40;
+                step = step - 50;
             }
-            else if(diff > 20)
+            else if(diff > 50)
             {
-                step = step + 40;
+                step = step + 50;
             }
             
             //        NSLog(@"frametime: %f, audioclock: %f", self->frame_timer, self->_audio_clock);
@@ -468,9 +468,13 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         [self.delegate mediaAnalyser:self decodeVideo:pic frameSize:CGSizeMake(_pVideoCodecCtx->width, _pVideoCodecCtx->height)];
         
         step = step/1000;
-        if(step > 1/frameRate + 0.05 || step < 1/frameRate - 0.05)
+        if(step < 0.01)
         {
-            step = 1/frameRate;
+            step = 0.01;
+        }
+        else if(step > 0.06)
+        {
+            step = 0.06;
         }
         NSLog(@"step: %f", step);
         //    NSLog(@"frametime: %f", self->frame_timer);

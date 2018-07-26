@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C96FB66321098C8600004309 /* movie.mkv in Resources */ = {isa = PBXBuildFile; fileRef = C96FB66221098C8600004309 /* movie.mkv */; };
 		C972D33320F7314B00FD6661 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = C972D33220F7314B00FD6661 /* AppDelegate.m */; };
 		C972D33620F7314B00FD6661 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = C972D33520F7314B00FD6661 /* ViewController.m */; };
 		C972D33920F7314B00FD6661 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C972D33720F7314B00FD6661 /* Main.storyboard */; };
@@ -41,6 +42,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		C96FB66221098C8600004309 /* movie.mkv */ = {isa = PBXFileReference; lastKnownFileType = file; path = movie.mkv; sourceTree = "<group>"; };
 		C972D32E20F7314B00FD6661 /* he_player.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = he_player.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C972D33120F7314B00FD6661 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		C972D33220F7314B00FD6661 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -247,6 +249,7 @@
 				C972D33220F7314B00FD6661 /* AppDelegate.m */,
 				C972D33420F7314B00FD6661 /* ViewController.h */,
 				C972D33520F7314B00FD6661 /* ViewController.m */,
+				C96FB66221098C8600004309 /* movie.mkv */,
 				C972D33720F7314B00FD6661 /* Main.storyboard */,
 				C972D33A20F7314D00FD6661 /* Assets.xcassets */,
 				C972D33C20F7314D00FD6661 /* LaunchScreen.storyboard */,
@@ -558,6 +561,7 @@
 				C972D3E720F7450C00FD6661 /* displayFragmentShader.fs in Resources */,
 				C972D33E20F7314D00FD6661 /* LaunchScreen.storyboard in Resources */,
 				C972D33B20F7314D00FD6661 /* Assets.xcassets in Resources */,
+				C96FB66321098C8600004309 /* movie.mkv in Resources */,
 				C972D33920F7314B00FD6661 /* Main.storyboard in Resources */,
 				C9A4B7E520F8A3DA006F5FE9 /* play_button@3x.png in Resources */,
 			);

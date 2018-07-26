@@ -27,7 +27,7 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
     
-    NSString* strVideoPath = [[NSBundle mainBundle] pathForResource:@"movie2.mkv" ofType:nil];
+    NSString* strVideoPath = [[NSBundle mainBundle] pathForResource:@"movie.mkv" ofType:nil];
     HePlayerView* playerView = [[HePlayerView alloc] initWithFrame:CGRectMake(0, 100, self.view.bounds.size.width, 300) mediaPath:strVideoPath];
     [self.view addSubview:playerView];
     self.playView = playerView;
