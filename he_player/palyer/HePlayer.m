@@ -35,6 +35,12 @@
     GLuint texture_v;
 }
 
+- (void)dealloc
+{
+    self.mediaAnalyser.delegate = nil;
+    self.mediaAnalyser.bCanPlay = NO;
+}
+
 - (instancetype)initWithMediaPath:(NSString *)path renderView:(UIView*)view
 {
     if(self = [super init])
@@ -264,7 +270,7 @@
     }
     
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.progressView changeTimePositionWithTime:picture->pts/1000];
+        [self.progressView changeTimePositionWithTime:picture->pts];
     });
     
     [self useContext];

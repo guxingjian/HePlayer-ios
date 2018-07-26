@@ -22,13 +22,14 @@
 #define BUFFER_COUNT 3
 #define SEEK_STEP 5
 
+static HeMediaAnalyser* producerAnalyzer = nil;
+static HeMediaAnalyser* customerAnalyzer = nil;
 
 void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBufferRef inBuffer);
 
 @interface HeMediaAnalyser()
 
 @property(nonatomic, strong)NSString* strPath;
-@property(nonatomic, weak)id<HeMediaAnalyserDelegate> delegate;
 @property(nonatomic, assign)BOOL bShouldConvert;
 @property(nonatomic, assign)BOOL bPause;
 @property(nonatomic, assign)BOOL bIsAnalysing;
@@ -48,13 +49,11 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     int _videoStream;
     AVFrame* _pFrame;
     AVFrame* _yuvFrame;
-    AVPacket* _videoPkt;
     struct SwsContext* swsContext;
     HeYUV420PictureQueue* _pictureQueue;
 
     double video_clock;
     double frame_timer;
-    double frame_last_delay;
     double frame_last_pts;
     
     AVCodecContext* _pAudioCodecCtx;
@@ -65,21 +64,20 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     AudioQueueBufferRef buffers[BUFFER_COUNT];
     HeAudioDataQueue* _audioBufferQueue;
     SwrContext* swrContext;
-    AVPacket* audioPkt;
-    dispatch_queue_t _audioDispatchQueue;
+    
+    CGFloat _videoTimeBase;
+    CGFloat _audioTimeBase;
 }
 
 - (void)dealloc
 {
+    AudioQueueDispose(queueRef, YES);
     for(NSInteger i = 0; i < BUFFER_COUNT; ++ i)
     {
         AudioQueueFreeBuffer(queueRef, buffers[i]);
     }
-    AudioQueueDispose(queueRef, YES);
     
     avformat_close_input(&_formatContext);
-    
-    avcodec_close(_pVideoCodecCtx);
     avcodec_free_context(&_pVideoCodecCtx);
     av_frame_free(&_pFrame);
     if(swsContext)
@@ -87,13 +85,10 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         av_frame_free(&_yuvFrame);
         sws_freeContext(swsContext);
     }
-    av_packet_free(&_videoPkt);
     
-    avcodec_close(_pAudioCodecCtx);
     avcodec_free_context(&_pAudioCodecCtx);
     swr_free(&swrContext);
     av_frame_free(&_audioFrame);
-    av_packet_free(&audioPkt);
 }
 
 - (instancetype)initWithMediaPath:(NSString *)path delegate:(id<HeMediaAnalyserDelegate>)delegate
@@ -158,7 +153,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     [self setVideoConfig];
     [self setAudioConfig];
     
-    [self.delegate mediaAnalyser:self getVideoDuration:pFormatCtx->duration/1000000];
+    [self.delegate mediaAnalyser:self getVideoDuration:pFormatCtx->duration/AV_TIME_BASE];
 }
 
 - (void)setAudioConfig
@@ -189,7 +184,6 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     }
     
     _audioFrame = av_frame_alloc();
-    audioPkt = av_packet_alloc();
     _pAudioCodecCtx = pAudioCodecCtx;
     _pAudioCodec = pCodec;
 
@@ -210,8 +204,6 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     des.mReserved = 0;
     
     int nBufferSize = av_samples_get_buffer_size(NULL, out_nb_channels, _pAudioCodecCtx->frame_size, out_sample_fmt, 1);
-    
-    _audioDispatchQueue = dispatch_queue_create("audio queue", NULL);
     void *p = (__bridge void *) self;
     AudioQueueNewOutput(&des, HandleOutputBufferCallBack, p,nil, nil, 0, &queueRef);
     for(int i = 0 ; i < BUFFER_COUNT ; i ++){
@@ -223,6 +215,8 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     _audioBufferQueue = [[HeAudioDataQueue alloc] initWithBufferSize:nBufferSize];
     [self setupSwrContext];
     
+    AVRational timeBase = _formatContext->streams[_audioStream]->time_base;
+    _audioTimeBase = (CGFloat)timeBase.num/timeBase.den;
 }
 
 - (void)setupSwrContext
@@ -278,7 +272,6 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     _pVideoCodecCtx = pVideoCodecCtx;
     _pVideoCodec = pCodec;
     _pFrame = av_frame_alloc();
-    _videoPkt = av_packet_alloc();
     if(_pVideoCodecCtx->pix_fmt != AV_PIX_FMT_YUV420P && _pVideoCodecCtx->pix_fmt != AV_PIX_FMT_NONE)
     {
         _yuvFrame = av_frame_alloc();
@@ -293,6 +286,9 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     }
     self.bCanPlay = YES;
     _pictureQueue = [HeYUV420PictureQueue pictureQueueWithStorageSize:CGSizeMake(pVideoCodecCtx->width, pVideoCodecCtx->height)];
+    
+    AVRational timeBase = _formatContext->streams[_videoStream]->time_base;
+    _videoTimeBase = (CGFloat)timeBase.num/timeBase.den;
 }
 
 - (void)clearAudioBuffer
@@ -309,11 +305,17 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 {
     while (1)
     {
+        if(!producerAnalyzer.bCanPlay)
+        {
+            producerAnalyzer = nil;
+            return ;
+        }
+        
         if(self.seekTime > 0)
         {
             self.audioClearFlag = YES;
             self.pictureClearFlag = YES;
-            [self seekToTime:self.seekTime dir:(self.seekTime > self->frame_timer/1000)];
+            [self seekToTime:self.seekTime dir:(self.seekTime > self->frame_timer)];
             self.seekTime = 0;
         }
         else
@@ -375,7 +377,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         int len2;
         
         audio_buffer* audioBuf = [_audioBufferQueue idleAudioBuffer];
-        audioBuf->pts = _audioFrame->pts;
+        audioBuf->pts = _audioFrame->pts*_audioTimeBase;
         len2 = swr_convert(swrContext, &audioBuf->buffer, out_count, inBuffer, _audioFrame->nb_samples);
         if (len2 < 0) {
             return ;
@@ -406,12 +408,15 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     if(!self.bIsAnalysing)
     {
         __weak typeof(self) ws = self;
+        
+        producerAnalyzer = self;
+        customerAnalyzer = self;
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             [ws analyseVideoAndAudio];
         });
         
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            [self showVideoFrame];
+            [ws showVideoFrame];
         });
         
         void *p = (__bridge void *) self;
@@ -431,6 +436,15 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)showVideoFrame
 {
+    static NSTimer* refreshTimer = nil;
+    if(!customerAnalyzer.bCanPlay)
+    {
+        [refreshTimer invalidate];
+        refreshTimer = nil;
+        customerAnalyzer = nil;
+        return ;
+    }
+    
     if(self.pictureClearFlag)
     {
         [self clearPictureBuffer];
@@ -440,6 +454,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     if(!self.bPause)
     {
         yuv420_picture* pic = [_pictureQueue getPicture];
+        pic->pts = pic->pts*_videoTimeBase;
         //计算帧率，平均每帧间隔时间
         double frameRate = av_q2d(_formatContext->streams[_videoStream]->avg_frame_rate);
         double step = 0.20;
@@ -452,13 +467,13 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
             step = pic->pts - self->frame_last_pts;
             self->frame_timer += step;
             double diff = self->frame_timer - self->_audio_clock;
-            if(diff < -50)
+            if(diff < -0.05)
             {
-                step = step - 50;
+                step = step - 0.05;
             }
-            else if(diff > 50)
+            else if(diff > 0.05)
             {
-                step = step + 50;
+                step = step + 0.05;
             }
             
             //        NSLog(@"frametime: %f, audioclock: %f", self->frame_timer, self->_audio_clock);
@@ -467,7 +482,6 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         self->frame_last_pts = pic->pts;
         [self.delegate mediaAnalyser:self decodeVideo:pic frameSize:CGSizeMake(_pVideoCodecCtx->width, _pVideoCodecCtx->height)];
         
-        step = step/1000;
         if(step < 0.01)
         {
             step = 0.01;
@@ -478,7 +492,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         }
         NSLog(@"step: %f", step);
         //    NSLog(@"frametime: %f", self->frame_timer);
-        static NSTimer* refreshTimer = nil;
+        
         if (!refreshTimer) {
             refreshTimer = [NSTimer timerWithTimeInterval:step target:self selector:@selector(showVideoFrame) userInfo:nil repeats:YES];
             NSRunLoop* threadRunloop = [NSRunLoop currentRunLoop];
@@ -528,12 +542,12 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     if(!self.bPause)
     {
         audio_buffer* audioBuffer = [_audioBufferQueue getBuffer];
-        
+        CGFloat fTime = audioBuffer->pts;
         memcpy(bufferRef->mAudioData, audioBuffer->buffer, audioBuffer->size);
         bufferRef->mAudioDataByteSize = (UInt32)audioBuffer->size;
         AudioQueueEnqueueBuffer(queueRef, bufferRef, 0, nil);
-        self.audio_clock = audioBuffer->pts;
         [_audioBufferQueue freeBuffer:audioBuffer];
+        self.audio_clock = fTime;
     }
     else
     {
@@ -546,12 +560,12 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)seekForward
 {
-    self.seekTime = self->frame_timer/1000+SEEK_STEP;
+    self.seekTime = self->frame_timer+SEEK_STEP;
 }
 
 - (void)seekBackward
 {
-    self.seekTime = self->frame_timer/1000-SEEK_STEP;
+    self.seekTime = self->frame_timer-SEEK_STEP;
 }
 
 - (void)setTimeStamp:(double)timestamp
@@ -561,7 +575,10 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)seekToTime:(double)timestamp dir:(BOOL)forward
 {
-    double totalTime = _formatContext->duration/1000000;
+    if(0 == _videoTimeBase)
+        return ;
+    
+    double totalTime = _formatContext->duration/AV_TIME_BASE;
     
     if(timestamp < 0)
     {
@@ -572,8 +589,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         timestamp = totalTime;
     }
     
-    AVRational timeBase = _formatContext->streams[_videoStream]->time_base;
-    int64_t targetFrame = (int64_t)((double)timeBase.den / timeBase.num * timestamp);
+    int64_t targetFrame = (int64_t)(timestamp/_videoTimeBase);
     if(forward)
     {
         av_seek_frame(_formatContext, _videoStream, targetFrame, AVSEEK_FLAG_FRAME);
@@ -583,10 +599,9 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         av_seek_frame(_formatContext, _videoStream, targetFrame, AVSEEK_FLAG_BACKWARD);
     }
     
-    double targetTime = timestamp * 1000;
-    self->frame_timer = targetTime;
-    self->frame_last_pts = targetTime;
-    self->_audio_clock = targetTime;
+    self->frame_timer = timestamp;
+    self->frame_last_pts = timestamp;
+    self.audio_clock = timestamp;
     
     avcodec_flush_buffers(_pAudioCodecCtx);
     avcodec_flush_buffers(_pVideoCodecCtx);

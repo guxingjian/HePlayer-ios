@@ -18,12 +18,12 @@
 - (void)mediaAnalyser:(HeMediaAnalyser*)analyser decodeVideo:(yuv420_picture*)picture frameSize:(CGSize)size;
 - (void)mediaAnalyser:(HeMediaAnalyser*)analyser getVideoDuration:(CGFloat)duration;
 - (void)mediaAnalyser:(HeMediaAnalyser*)analyser didFinished:(BOOL)finished error:(NSError*)error;
-- (void)mediaAnalyser:(HeMediaAnalyser*)analyser videoTimeChanged:(CGFloat)timestamp;
 
 @end
 
 @interface HeMediaAnalyser : NSObject
 
+@property(nonatomic, weak)id<HeMediaAnalyserDelegate> delegate;
 @property(nonatomic, assign)BOOL bCanPlay;
 
 - (instancetype)initWithMediaPath:(NSString *)path delegate:(id<HeMediaAnalyserDelegate>)delegate;
