@@ -15,7 +15,6 @@
     yuv420_picture* _head_pic;
     yuv420_picture* _tail_pic;
     int _picCount;
-    int _nBytes;
     NSCondition* _condition;
 }
 
@@ -32,7 +31,7 @@
         _nW = size.width;
         _nH = size.height;
         _condition = [[NSCondition alloc] init];
-        self.maxBytes = 1024*1024*15;
+        self.maxBytes = 1024*1024*30;
     }
     return self;
 }
@@ -47,14 +46,35 @@
     
     int nBytes = _nW*_nH;
     yuv420_picture* pic = av_mallocz(sizeof(yuv420_picture));
+    
     unsigned char* y = av_mallocz(nBytes);
-    memcpy(y, frame->data[0], nBytes);
+    for(int i = 0; i < _nH; i++)
+    {
+        memcpy(y+_nW*i,
+               frame->data[0]+frame->linesize[0]*i,
+               _nW);
+    }
+    
+//    memcpy(y, frame->data[0], nBytes);
     
     unsigned char* u = av_mallocz(nBytes/4);
-    memcpy(u, frame->data[1], nBytes/4);
+    for(int i = 0; i < _nH/2; i++)
+    {
+        memcpy(u+_nW/2*i,
+               frame->data[1]+frame->linesize[1]*i,
+               _nW/2);
+    }
+//    memcpy(u, frame->data[1], nBytes/4);
     
     unsigned char* v = av_mallocz(nBytes/4);
-    memcpy(v, frame->data[2], nBytes/4);
+    for(int i = 0; i < _nH/2; i++)
+    {
+        memcpy(v+_nW/2*i,
+               frame->data[2]+frame->linesize[2]*i,
+               _nW/2);
+    }
+    
+//    memcpy(v, frame->data[2], nBytes/4);
     pic->y = y;
     pic->u = u;
     pic->v = v;
@@ -71,6 +91,8 @@
     _tail_pic = pic;
     
     _picCount ++;
+//    NSLog(@"pic count: %d", _picCount);
+    
     _nBytes += (int)1.5*nBytes;
     
     [_condition signal];
@@ -89,6 +111,7 @@
     pic = _head_pic;
     _head_pic = _head_pic->next;
     _picCount --;
+//    NSLog(@"getPicture pic count: %d", _picCount);
     int nBytes = _nW*_nH;
     _nBytes -= (int)1.5*nBytes;
     if(0 == _picCount)

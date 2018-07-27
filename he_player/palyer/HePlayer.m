@@ -269,8 +269,9 @@
         });
     }
     
+    double pts = picture->pts;
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self.progressView changeTimePositionWithTime:picture->pts];
+        [self.progressView changeTimePositionWithTime:pts];
     });
     
     [self useContext];
@@ -297,7 +298,6 @@
     glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, ybits);
     
     glUniform1i(yIndex, 0);
-    //
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture_u);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width/2, height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, ubits);
@@ -356,7 +356,12 @@
 
 - (void)mediaAnalyser:(HeMediaAnalyser *)analyser didFinished:(BOOL)finished error:(NSError *)error
 {
-    
+    if(error)
+    {
+        NSLog(@"error: %@", error);
+    }
+    [self setPlaying:NO];
+    [self.progressView changeTimePositionWithTime:0];
 }
 
 - (void)mediaAnalyser:(HeMediaAnalyser *)analyser getVideoDuration:(CGFloat)duration

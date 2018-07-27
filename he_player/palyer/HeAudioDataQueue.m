@@ -20,7 +20,6 @@
     audio_buffer* _head_buf;
     audio_buffer* _tail_buf;
     int _bufCount;
-    int _nBytes;
 }
 
 - (instancetype)initWithBufferSize:(NSInteger)size
@@ -28,7 +27,7 @@
     if(self = [super init])
     {
         self.nSize = size;
-        self.maxBytes = 1024*100;
+        self.maxBytes = 1024*1024*15;
     }
     return self;
 }
@@ -89,6 +88,7 @@
     }
     _tail_buf = buffer;
     _bufCount ++;
+//    NSLog(@"audio count: %d", _bufCount);
     _nBytes += buffer->size;
     
     [_condition signal];
@@ -106,6 +106,7 @@
     audio_buffer* head = _head_buf;
     _head_buf = head->next;
     _bufCount --;
+//    NSLog(@"getBuffer audio count: %d", _bufCount);
     _nBytes -= head->size;
     if(0 == _bufCount)
     {
