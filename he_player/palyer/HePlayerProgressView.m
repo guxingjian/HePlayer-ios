@@ -129,7 +129,11 @@
     
     self.currentTimeStamp = timestamp;
     CGFloat fPos = timestamp/self.nDuration*self.lineLayer.frame.size.width;
+    
+    [CATransaction begin];
+    [CATransaction disableActions];
     self.posLayer.frame = CGRectMake(self.lineLayer.frame.origin.x + fPos - 4, self.bounds.size.height/2 - 8/2, 8, 8);
+    [CATransaction commit];
 }
 
 - (void)adjustFrame

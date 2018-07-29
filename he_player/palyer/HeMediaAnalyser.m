@@ -475,6 +475,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     {
         [refreshTimer invalidate];
         refreshTimer = nil;
+        [self.delegate mediaAnalyser:self decodeVideo:nil frameSize:CGSizeZero];
         return ;
     }
     
@@ -560,7 +561,10 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         self.audioClearFlag = NO;
     }
     if(self.bStop)
+    {
+        self.audio_clock = 0;
         return ;
+    }
     if(!self.bPause)
     {
         audio_buffer* audioBuffer = [_audioBufferQueue getBuffer];

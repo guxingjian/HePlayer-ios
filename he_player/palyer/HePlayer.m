@@ -269,86 +269,88 @@
         });
     }
     
-    double pts = picture->pts;
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.progressView changeTimePositionWithTime:pts];
-    });
-    
     [self useContext];
+    glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);
     
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
     
-    glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);
-    
-    int width = size.width;
-    int height = size.height;
-    
-    unsigned char* ybits = picture->y;
-    unsigned char* ubits = picture->u;
-    unsigned char* vbits = picture->v;
-    
-    GLint yIndex = [[EGL_Program sharedProgram] uniformLocationOfName:@"tex_y"];
-    GLint uIndex = [[EGL_Program sharedProgram] uniformLocationOfName:@"tex_u"];
-    GLint vIndex = [[EGL_Program sharedProgram] uniformLocationOfName:@"tex_v"];
-    
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture_y);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, ybits);
-    
-    glUniform1i(yIndex, 0);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, texture_u);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width/2, height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, ubits);
-    
-    glUniform1i(uIndex, 1);
-    
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, texture_v);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width/2, height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, vbits);
-    
-    glUniform1i(vIndex, 2);
-    
-    GLint backingWidth, backingHeight;
-    glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &backingWidth);
-    glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &backingHeight);
-    CGFloat fWScale = width/(CGFloat)backingWidth;
-    CGFloat fHScale = height/(CGFloat)backingHeight;
-    CGFloat fScale = 0;
-    if(fWScale > fHScale)
+    if(picture)
     {
-        fScale = fWScale;
+        double pts = picture->pts;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.progressView changeTimePositionWithTime:pts];
+        });
+        
+        int width = size.width;
+        int height = size.height;
+        
+        unsigned char* ybits = picture->y;
+        unsigned char* ubits = picture->u;
+        unsigned char* vbits = picture->v;
+        
+        GLint yIndex = [[EGL_Program sharedProgram] uniformLocationOfName:@"tex_y"];
+        GLint uIndex = [[EGL_Program sharedProgram] uniformLocationOfName:@"tex_u"];
+        GLint vIndex = [[EGL_Program sharedProgram] uniformLocationOfName:@"tex_v"];
+        
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture_y);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, ybits);
+        
+        glUniform1i(yIndex, 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture_u);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width/2, height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, ubits);
+        
+        glUniform1i(uIndex, 1);
+        
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, texture_v);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width/2, height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, vbits);
+        
+        glUniform1i(vIndex, 2);
+        
+        GLint backingWidth, backingHeight;
+        glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_WIDTH, &backingWidth);
+        glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_HEIGHT, &backingHeight);
+        CGFloat fWScale = width/(CGFloat)backingWidth;
+        CGFloat fHScale = height/(CGFloat)backingHeight;
+        CGFloat fScale = 0;
+        if(fWScale > fHScale)
+        {
+            fScale = fWScale;
+        }
+        else
+        {
+            fScale = fHScale;
+        }
+        
+        GLfloat fCoorW = fWScale/fScale;
+        GLfloat fCoorH = fHScale/fScale;
+        const GLfloat vertexVertices[] = {
+            -fCoorW, -fCoorH,
+            fCoorW, -fCoorH,
+            -fCoorW,  fCoorH,
+            fCoorW, fCoorH
+        };
+        
+        static const GLfloat textureVertices[] = {
+            0.0f,  1.0f,
+            1.0f,  1.0f,
+            0.0f,  0.0f,
+            1.0f,  0.0f
+        };
+        
+        GLint vertexIndex = [[EGL_Program sharedProgram] attribLocationOfName:@"a_postion"];
+        glVertexAttribPointer(vertexIndex, 2, GL_FLOAT, GL_FALSE, 0, vertexVertices);
+        glEnableVertexAttribArray(vertexIndex);
+        GLint textureIndex = [[EGL_Program sharedProgram] attribLocationOfName:@"textureIn"];
+        glEnableVertexAttribArray(textureIndex);
+        glVertexAttribPointer(textureIndex, 2, GL_FLOAT, GL_FALSE, 0, textureVertices);
+        
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
-    else
-    {
-        fScale = fHScale;
-    }
-    
-    GLfloat fCoorW = fWScale/fScale;
-    GLfloat fCoorH = fHScale/fScale;
-    const GLfloat vertexVertices[] = {
-        -fCoorW, -fCoorH,
-        fCoorW, -fCoorH,
-        -fCoorW,  fCoorH,
-        fCoorW, fCoorH
-    };
-    
-    static const GLfloat textureVertices[] = {
-        0.0f,  1.0f,
-        1.0f,  1.0f,
-        0.0f,  0.0f,
-        1.0f,  0.0f
-    };
-    
-    GLint vertexIndex = [[EGL_Program sharedProgram] attribLocationOfName:@"a_postion"];
-    glVertexAttribPointer(vertexIndex, 2, GL_FLOAT, GL_FALSE, 0, vertexVertices);
-    glEnableVertexAttribArray(vertexIndex);
-    GLint textureIndex = [[EGL_Program sharedProgram] attribLocationOfName:@"textureIn"];
-    glEnableVertexAttribArray(textureIndex);
-    glVertexAttribPointer(textureIndex, 2, GL_FLOAT, GL_FALSE, 0, textureVertices);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    
     [[EAGLContext currentContext] presentRenderbuffer:GL_RENDERBUFFER];
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
