@@ -19,7 +19,7 @@ typedef struct audio_buffer{
 @interface HeAudioDataQueue : NSObject
 
 @property(nonatomic, assign)int maxBytes;
-@property(nonatomic, assign)int nBytes;
+@property(nonatomic, assign)int nCacheBytes;
 
 - (instancetype)initWithBufferSize:(NSInteger)size;
 

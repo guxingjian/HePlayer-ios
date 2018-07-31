@@ -20,6 +20,12 @@
     audio_buffer* _head_buf;
     audio_buffer* _tail_buf;
     int _bufCount;
+    int _nBytes;
+}
+
+- (void)dealloc
+{
+    [self clear];
 }
 
 - (instancetype)initWithBufferSize:(NSInteger)size
@@ -106,7 +112,7 @@
     audio_buffer* head = _head_buf;
     _head_buf = head->next;
     _bufCount --;
-//    NSLog(@"getBuffer audio count: %d", _bufCount);
+    NSLog(@"getBuffer audio count: %d", _bufCount);
     _nBytes -= head->size;
     if(0 == _bufCount)
     {

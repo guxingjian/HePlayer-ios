@@ -20,14 +20,14 @@
     GLuint gl_program;
 }
 
-+ (instancetype)sharedProgram
+- (void)dealloc
 {
-    static EGL_Program* program = nil;
-    static dispatch_once_t EGL_Program_onceToken;
-    dispatch_once(&EGL_Program_onceToken, ^{
-        program = [[self alloc] init];
-    });
-    
+    [self clear];
+}
+
++ (instancetype)eglProgram
+{
+    EGL_Program* program = [[self alloc] init];
     return program;
 }
 
@@ -40,6 +40,11 @@
     }
     
     return self;
+}
+
+- (void)clear
+{
+    glDeleteProgram(gl_program);
 }
 
 - (void)resetProgram

@@ -23,6 +23,7 @@
 @property(nonatomic, assign)BOOL isPlaying;
 @property(nonatomic, assign)BOOL canPlay;
 @property(nonatomic, strong)HePlayerProgressView* progressView;
+@property(nonatomic, strong)EGL_Program* eglProgram;
 
 @end
 
@@ -192,14 +193,15 @@
     
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    EGL_Program* program = [EGL_Program sharedProgram];
+    EGL_Program* program = [EGL_Program eglProgram];
+    self.eglProgram = program;
     NSString* vertextShader = [[NSBundle mainBundle] pathForResource:@"displayVertexShader.vs" ofType:nil];
     [program loadShader:GL_VERTEX_SHADER shaderPath:vertextShader];
     NSString* fragmentShader = [[NSBundle mainBundle] pathForResource:@"displayFragmentShader.fs" ofType:nil];
     [program loadShader:GL_FRAGMENT_SHADER shaderPath:fragmentShader];
     
     [program linkProgram];
-    [[EGL_Program sharedProgram] useProgram];
+    [program useProgram];
     
     GLuint texy;
     glActiveTexture(GL_TEXTURE0);
@@ -290,9 +292,9 @@
         unsigned char* ubits = picture->u;
         unsigned char* vbits = picture->v;
         
-        GLint yIndex = [[EGL_Program sharedProgram] uniformLocationOfName:@"tex_y"];
-        GLint uIndex = [[EGL_Program sharedProgram] uniformLocationOfName:@"tex_u"];
-        GLint vIndex = [[EGL_Program sharedProgram] uniformLocationOfName:@"tex_v"];
+        GLint yIndex = [self.eglProgram uniformLocationOfName:@"tex_y"];
+        GLint uIndex = [self.eglProgram uniformLocationOfName:@"tex_u"];
+        GLint vIndex = [self.eglProgram uniformLocationOfName:@"tex_v"];
         
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture_y);
@@ -342,10 +344,10 @@
             1.0f,  0.0f
         };
         
-        GLint vertexIndex = [[EGL_Program sharedProgram] attribLocationOfName:@"a_postion"];
+        GLint vertexIndex = [self.eglProgram attribLocationOfName:@"a_postion"];
         glVertexAttribPointer(vertexIndex, 2, GL_FLOAT, GL_FALSE, 0, vertexVertices);
         glEnableVertexAttribArray(vertexIndex);
-        GLint textureIndex = [[EGL_Program sharedProgram] attribLocationOfName:@"textureIn"];
+        GLint textureIndex = [self.eglProgram attribLocationOfName:@"textureIn"];
         glEnableVertexAttribArray(textureIndex);
         glVertexAttribPointer(textureIndex, 2, GL_FLOAT, GL_FALSE, 0, textureVertices);
         

@@ -21,7 +21,7 @@ typedef struct yuv420_picture{
 @interface HeYUV420PictureQueue : NSObject
 
 @property(nonatomic, assign)NSInteger maxBytes;
-@property(nonatomic, assign)int nBytes;
+@property(nonatomic, assign)int nCacheCount;
 
 + (instancetype)pictureQueueWithStorageSize:(CGSize)size;
 - (void)addPictureWithFrame:(AVFrame*)frame;

@@ -11,7 +11,7 @@
 
 @interface EGL_Program : NSObject
 
-+ (instancetype)sharedProgram;
++ (instancetype)eglProgram;
 
 - (void)resetProgram;
 - (BOOL)loadShader:(GLenum)shaderType shaderPath:(NSString*)path;
@@ -20,5 +20,6 @@
 
 - (GLint)attribLocationOfName:(NSString*)name;
 - (GLint)uniformLocationOfName:(NSString*)name;
+- (void)clear;
 
 @end

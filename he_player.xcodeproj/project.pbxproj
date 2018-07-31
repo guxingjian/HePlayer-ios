@@ -7,6 +7,23 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C956FF8A21103633008E647E /* FFmpegViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = C956FF8921103633008E647E /* FFmpegViewController.m */; };
+		C956FF9D211038AA008E647E /* HePlayerProgressView.m in Sources */ = {isa = PBXBuildFile; fileRef = C956FF8C211038AA008E647E /* HePlayerProgressView.m */; };
+		C956FF9E211038AA008E647E /* displayFragmentShader.fs in Resources */ = {isa = PBXBuildFile; fileRef = C956FF8D211038AA008E647E /* displayFragmentShader.fs */; };
+		C956FF9F211038AA008E647E /* EGL_Program.m in Sources */ = {isa = PBXBuildFile; fileRef = C956FF8E211038AA008E647E /* EGL_Program.m */; };
+		C956FFA0211038AA008E647E /* HeMediaAnalyser.m in Sources */ = {isa = PBXBuildFile; fileRef = C956FF91211038AA008E647E /* HeMediaAnalyser.m */; };
+		C956FFA1211038AA008E647E /* HeYUV420PictureQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = C956FF93211038AA008E647E /* HeYUV420PictureQueue.m */; };
+		C956FFA2211038AA008E647E /* HePlayerView.m in Sources */ = {isa = PBXBuildFile; fileRef = C956FF96211038AA008E647E /* HePlayerView.m */; };
+		C956FFA3211038AA008E647E /* play_button@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = C956FF97211038AA008E647E /* play_button@3x.png */; };
+		C956FFA4211038AA008E647E /* displayVertexShader.vs in Resources */ = {isa = PBXBuildFile; fileRef = C956FF98211038AA008E647E /* displayVertexShader.vs */; };
+		C956FFA5211038AA008E647E /* HeAudioDataQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = C956FF9A211038AA008E647E /* HeAudioDataQueue.m */; };
+		C956FFA6211038AA008E647E /* HePlayer.m in Sources */ = {isa = PBXBuildFile; fileRef = C956FF9B211038AA008E647E /* HePlayer.m */; };
+		C956FFA921103941008E647E /* AVPlayerViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = C956FFA821103941008E647E /* AVPlayerViewController.m */; };
+		C956FFAD21103A61008E647E /* AVPlayerView.m in Sources */ = {isa = PBXBuildFile; fileRef = C956FFAC21103A61008E647E /* AVPlayerView.m */; };
+		C956FFAF21104434008E647E /* test.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C956FFAE21104434008E647E /* test.mp4 */; };
+		C956FFB021104449008E647E /* movie.mkv in Sources */ = {isa = PBXBuildFile; fileRef = C96FB66221098C8600004309 /* movie.mkv */; };
+		C956FFB121104463008E647E /* test.mp4 in Sources */ = {isa = PBXBuildFile; fileRef = C956FFAE21104434008E647E /* test.mp4 */; };
+		C956FFB821104C82008E647E /* VLCPlayerView.m in Sources */ = {isa = PBXBuildFile; fileRef = C956FFB721104C82008E647E /* VLCPlayerView.m */; };
 		C96FB66321098C8600004309 /* movie.mkv in Resources */ = {isa = PBXBuildFile; fileRef = C96FB66221098C8600004309 /* movie.mkv */; };
 		C972D33320F7314B00FD6661 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = C972D33220F7314B00FD6661 /* AppDelegate.m */; };
 		C972D33620F7314B00FD6661 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = C972D33520F7314B00FD6661 /* ViewController.m */; };
@@ -21,12 +38,6 @@
 		C972D3E420F7450C00FD6661 /* libavdevice.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C972D3D220F7450C00FD6661 /* libavdevice.a */; };
 		C972D3E520F7450C00FD6661 /* libswresample.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C972D3D320F7450C00FD6661 /* libswresample.a */; };
 		C972D3E620F7450C00FD6661 /* libswscale.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C972D3D420F7450C00FD6661 /* libswscale.a */; };
-		C972D3E720F7450C00FD6661 /* displayFragmentShader.fs in Resources */ = {isa = PBXBuildFile; fileRef = C972D3D620F7450C00FD6661 /* displayFragmentShader.fs */; };
-		C972D3E820F7450C00FD6661 /* EGL_Program.m in Sources */ = {isa = PBXBuildFile; fileRef = C972D3D720F7450C00FD6661 /* EGL_Program.m */; };
-		C972D3E920F7450C00FD6661 /* HeMediaAnalyser.m in Sources */ = {isa = PBXBuildFile; fileRef = C972D3DA20F7450C00FD6661 /* HeMediaAnalyser.m */; };
-		C972D3EA20F7450C00FD6661 /* HePlayerView.m in Sources */ = {isa = PBXBuildFile; fileRef = C972D3DC20F7450C00FD6661 /* HePlayerView.m */; };
-		C972D3EB20F7450C00FD6661 /* displayVertexShader.vs in Resources */ = {isa = PBXBuildFile; fileRef = C972D3DD20F7450C00FD6661 /* displayVertexShader.vs */; };
-		C972D3EC20F7450C00FD6661 /* HePlayer.m in Sources */ = {isa = PBXBuildFile; fileRef = C972D3DE20F7450C00FD6661 /* HePlayer.m */; };
 		C972D3F820F768EC00FD6661 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = C972D3F720F768EC00FD6661 /* libz.tbd */; };
 		C972D3FA20F7690200FD6661 /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = C972D3F920F7690200FD6661 /* libiconv.tbd */; };
 		C972D3FC20F7691100FD6661 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C972D3FB20F7691100FD6661 /* CoreMedia.framework */; };
@@ -35,13 +46,35 @@
 		C972D40220F769EE00FD6661 /* libstdc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = C972D40120F769EE00FD6661 /* libstdc++.tbd */; };
 		C972D40420F76A0900FD6661 /* libbz2.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = C972D40320F76A0900FD6661 /* libbz2.tbd */; };
 		C972D40620F7742C00FD6661 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C972D40520F7742C00FD6661 /* AVFoundation.framework */; };
-		C9A4B7E520F8A3DA006F5FE9 /* play_button@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = C9A4B7E420F8A3DA006F5FE9 /* play_button@3x.png */; };
-		C9A4B7E820F8C12A006F5FE9 /* HeAudioDataQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = C9A4B7E720F8C12A006F5FE9 /* HeAudioDataQueue.m */; };
-		C9C9802F2108614000503F1A /* HePlayerProgressView.m in Sources */ = {isa = PBXBuildFile; fileRef = C9C9802E2108614000503F1A /* HePlayerProgressView.m */; };
-		C9E9224320FF30F100CD4CE7 /* HeYUV420PictureQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = C9E9224220FF30F100CD4CE7 /* HeYUV420PictureQueue.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		C956FF8821103633008E647E /* FFmpegViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FFmpegViewController.h; sourceTree = "<group>"; };
+		C956FF8921103633008E647E /* FFmpegViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FFmpegViewController.m; sourceTree = "<group>"; };
+		C956FF8C211038AA008E647E /* HePlayerProgressView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HePlayerProgressView.m; sourceTree = "<group>"; };
+		C956FF8D211038AA008E647E /* displayFragmentShader.fs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = displayFragmentShader.fs; sourceTree = "<group>"; };
+		C956FF8E211038AA008E647E /* EGL_Program.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EGL_Program.m; sourceTree = "<group>"; };
+		C956FF8F211038AA008E647E /* HePlayerView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HePlayerView.h; sourceTree = "<group>"; };
+		C956FF90211038AA008E647E /* HePlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HePlayer.h; sourceTree = "<group>"; };
+		C956FF91211038AA008E647E /* HeMediaAnalyser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HeMediaAnalyser.m; sourceTree = "<group>"; };
+		C956FF92211038AA008E647E /* HeAudioDataQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HeAudioDataQueue.h; sourceTree = "<group>"; };
+		C956FF93211038AA008E647E /* HeYUV420PictureQueue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HeYUV420PictureQueue.m; sourceTree = "<group>"; };
+		C956FF94211038AA008E647E /* HePlayerProgressView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HePlayerProgressView.h; sourceTree = "<group>"; };
+		C956FF95211038AA008E647E /* EGL_Program.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EGL_Program.h; sourceTree = "<group>"; };
+		C956FF96211038AA008E647E /* HePlayerView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HePlayerView.m; sourceTree = "<group>"; };
+		C956FF97211038AA008E647E /* play_button@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "play_button@3x.png"; sourceTree = "<group>"; };
+		C956FF98211038AA008E647E /* displayVertexShader.vs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = displayVertexShader.vs; sourceTree = "<group>"; };
+		C956FF99211038AA008E647E /* HeYUV420PictureQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HeYUV420PictureQueue.h; sourceTree = "<group>"; };
+		C956FF9A211038AA008E647E /* HeAudioDataQueue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HeAudioDataQueue.m; sourceTree = "<group>"; };
+		C956FF9B211038AA008E647E /* HePlayer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HePlayer.m; sourceTree = "<group>"; };
+		C956FF9C211038AA008E647E /* HeMediaAnalyser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HeMediaAnalyser.h; sourceTree = "<group>"; };
+		C956FFA721103941008E647E /* AVPlayerViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AVPlayerViewController.h; sourceTree = "<group>"; };
+		C956FFA821103941008E647E /* AVPlayerViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AVPlayerViewController.m; sourceTree = "<group>"; };
+		C956FFAB21103A61008E647E /* AVPlayerView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AVPlayerView.h; sourceTree = "<group>"; };
+		C956FFAC21103A61008E647E /* AVPlayerView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AVPlayerView.m; sourceTree = "<group>"; };
+		C956FFAE21104434008E647E /* test.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = test.mp4; sourceTree = "<group>"; };
+		C956FFB621104C82008E647E /* VLCPlayerView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VLCPlayerView.h; sourceTree = "<group>"; };
+		C956FFB721104C82008E647E /* VLCPlayerView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VLCPlayerView.m; sourceTree = "<group>"; };
 		C96FB66221098C8600004309 /* movie.mkv */ = {isa = PBXFileReference; lastKnownFileType = file; path = movie.mkv; sourceTree = "<group>"; };
 		C972D32E20F7314B00FD6661 /* he_player.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = he_player.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C972D33120F7314B00FD6661 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -169,16 +202,6 @@
 		C972D3D220F7450C00FD6661 /* libavdevice.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libavdevice.a; sourceTree = "<group>"; };
 		C972D3D320F7450C00FD6661 /* libswresample.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libswresample.a; sourceTree = "<group>"; };
 		C972D3D420F7450C00FD6661 /* libswscale.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libswscale.a; sourceTree = "<group>"; };
-		C972D3D620F7450C00FD6661 /* displayFragmentShader.fs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = displayFragmentShader.fs; sourceTree = "<group>"; };
-		C972D3D720F7450C00FD6661 /* EGL_Program.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EGL_Program.m; sourceTree = "<group>"; };
-		C972D3D820F7450C00FD6661 /* HePlayerView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HePlayerView.h; sourceTree = "<group>"; };
-		C972D3D920F7450C00FD6661 /* HePlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HePlayer.h; sourceTree = "<group>"; };
-		C972D3DA20F7450C00FD6661 /* HeMediaAnalyser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HeMediaAnalyser.m; sourceTree = "<group>"; };
-		C972D3DB20F7450C00FD6661 /* EGL_Program.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EGL_Program.h; sourceTree = "<group>"; };
-		C972D3DC20F7450C00FD6661 /* HePlayerView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HePlayerView.m; sourceTree = "<group>"; };
-		C972D3DD20F7450C00FD6661 /* displayVertexShader.vs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = displayVertexShader.vs; sourceTree = "<group>"; };
-		C972D3DE20F7450C00FD6661 /* HePlayer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HePlayer.m; sourceTree = "<group>"; };
-		C972D3DF20F7450C00FD6661 /* HeMediaAnalyser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HeMediaAnalyser.h; sourceTree = "<group>"; };
 		C972D3F720F768EC00FD6661 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		C972D3F920F7690200FD6661 /* libiconv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libiconv.tbd; path = usr/lib/libiconv.tbd; sourceTree = SDKROOT; };
 		C972D3FB20F7691100FD6661 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
@@ -187,13 +210,6 @@
 		C972D40120F769EE00FD6661 /* libstdc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libstdc++.tbd"; path = "usr/lib/libstdc++.tbd"; sourceTree = SDKROOT; };
 		C972D40320F76A0900FD6661 /* libbz2.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libbz2.tbd; path = usr/lib/libbz2.tbd; sourceTree = SDKROOT; };
 		C972D40520F7742C00FD6661 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
-		C9A4B7E420F8A3DA006F5FE9 /* play_button@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "play_button@3x.png"; sourceTree = "<group>"; };
-		C9A4B7E620F8C12A006F5FE9 /* HeAudioDataQueue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HeAudioDataQueue.h; sourceTree = "<group>"; };
-		C9A4B7E720F8C12A006F5FE9 /* HeAudioDataQueue.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HeAudioDataQueue.m; sourceTree = "<group>"; };
-		C9C9802D2108614000503F1A /* HePlayerProgressView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HePlayerProgressView.h; sourceTree = "<group>"; };
-		C9C9802E2108614000503F1A /* HePlayerProgressView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HePlayerProgressView.m; sourceTree = "<group>"; };
-		C9E9224120FF30F100CD4CE7 /* HeYUV420PictureQueue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HeYUV420PictureQueue.h; sourceTree = "<group>"; };
-		C9E9224220FF30F100CD4CE7 /* HeYUV420PictureQueue.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HeYUV420PictureQueue.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -222,6 +238,48 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C956FF8B211038AA008E647E /* palyer */ = {
+			isa = PBXGroup;
+			children = (
+				C956FF8F211038AA008E647E /* HePlayerView.h */,
+				C956FF96211038AA008E647E /* HePlayerView.m */,
+				C956FF90211038AA008E647E /* HePlayer.h */,
+				C956FF9B211038AA008E647E /* HePlayer.m */,
+				C956FF9C211038AA008E647E /* HeMediaAnalyser.h */,
+				C956FF91211038AA008E647E /* HeMediaAnalyser.m */,
+				C956FF92211038AA008E647E /* HeAudioDataQueue.h */,
+				C956FF9A211038AA008E647E /* HeAudioDataQueue.m */,
+				C956FF99211038AA008E647E /* HeYUV420PictureQueue.h */,
+				C956FF93211038AA008E647E /* HeYUV420PictureQueue.m */,
+				C956FF94211038AA008E647E /* HePlayerProgressView.h */,
+				C956FF8C211038AA008E647E /* HePlayerProgressView.m */,
+				C956FF95211038AA008E647E /* EGL_Program.h */,
+				C956FF8E211038AA008E647E /* EGL_Program.m */,
+				C956FF8D211038AA008E647E /* displayFragmentShader.fs */,
+				C956FF98211038AA008E647E /* displayVertexShader.vs */,
+				C956FF97211038AA008E647E /* play_button@3x.png */,
+			);
+			path = palyer;
+			sourceTree = "<group>";
+		};
+		C956FFAA21103A4D008E647E /* AVPlayer */ = {
+			isa = PBXGroup;
+			children = (
+				C956FFAB21103A61008E647E /* AVPlayerView.h */,
+				C956FFAC21103A61008E647E /* AVPlayerView.m */,
+			);
+			path = AVPlayer;
+			sourceTree = "<group>";
+		};
+		C956FFB521104C6C008E647E /* VLCPlayer */ = {
+			isa = PBXGroup;
+			children = (
+				C956FFB621104C82008E647E /* VLCPlayerView.h */,
+				C956FFB721104C82008E647E /* VLCPlayerView.m */,
+			);
+			path = VLCPlayer;
+			sourceTree = "<group>";
+		};
 		C972D32520F7314B00FD6661 = {
 			isa = PBXGroup;
 			children = (
@@ -242,14 +300,20 @@
 		C972D33020F7314B00FD6661 /* he_player */ = {
 			isa = PBXGroup;
 			children = (
+				C956FFB521104C6C008E647E /* VLCPlayer */,
+				C956FFAA21103A4D008E647E /* AVPlayer */,
 				C9E9224420FF34D900CD4CE7 /* common */,
 				C972D35720F7450C00FD6661 /* ffmpeg */,
-				C972D3D520F7450C00FD6661 /* palyer */,
 				C972D33120F7314B00FD6661 /* AppDelegate.h */,
 				C972D33220F7314B00FD6661 /* AppDelegate.m */,
 				C972D33420F7314B00FD6661 /* ViewController.h */,
 				C972D33520F7314B00FD6661 /* ViewController.m */,
+				C956FF8821103633008E647E /* FFmpegViewController.h */,
+				C956FF8921103633008E647E /* FFmpegViewController.m */,
+				C956FFA721103941008E647E /* AVPlayerViewController.h */,
+				C956FFA821103941008E647E /* AVPlayerViewController.m */,
 				C96FB66221098C8600004309 /* movie.mkv */,
+				C956FFAE21104434008E647E /* test.mp4 */,
 				C972D33720F7314B00FD6661 /* Main.storyboard */,
 				C972D33A20F7314D00FD6661 /* Assets.xcassets */,
 				C972D33C20F7314D00FD6661 /* LaunchScreen.storyboard */,
@@ -262,6 +326,7 @@
 		C972D35720F7450C00FD6661 /* ffmpeg */ = {
 			isa = PBXGroup;
 			children = (
+				C956FF8B211038AA008E647E /* palyer */,
 				C972D35820F7450C00FD6661 /* include */,
 				C972D3CD20F7450C00FD6661 /* lib */,
 			);
@@ -454,30 +519,6 @@
 			path = lib;
 			sourceTree = "<group>";
 		};
-		C972D3D520F7450C00FD6661 /* palyer */ = {
-			isa = PBXGroup;
-			children = (
-				C9A4B7E420F8A3DA006F5FE9 /* play_button@3x.png */,
-				C972D3D820F7450C00FD6661 /* HePlayerView.h */,
-				C972D3DC20F7450C00FD6661 /* HePlayerView.m */,
-				C972D3D920F7450C00FD6661 /* HePlayer.h */,
-				C972D3DE20F7450C00FD6661 /* HePlayer.m */,
-				C9C9802D2108614000503F1A /* HePlayerProgressView.h */,
-				C9C9802E2108614000503F1A /* HePlayerProgressView.m */,
-				C972D3DF20F7450C00FD6661 /* HeMediaAnalyser.h */,
-				C972D3DA20F7450C00FD6661 /* HeMediaAnalyser.m */,
-				C9A4B7E620F8C12A006F5FE9 /* HeAudioDataQueue.h */,
-				C9A4B7E720F8C12A006F5FE9 /* HeAudioDataQueue.m */,
-				C9E9224120FF30F100CD4CE7 /* HeYUV420PictureQueue.h */,
-				C9E9224220FF30F100CD4CE7 /* HeYUV420PictureQueue.m */,
-				C972D3DB20F7450C00FD6661 /* EGL_Program.h */,
-				C972D3D720F7450C00FD6661 /* EGL_Program.m */,
-				C972D3DD20F7450C00FD6661 /* displayVertexShader.vs */,
-				C972D3D620F7450C00FD6661 /* displayFragmentShader.fs */,
-			);
-			path = palyer;
-			sourceTree = "<group>";
-		};
 		C972D3F620F768EC00FD6661 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -557,13 +598,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C972D3EB20F7450C00FD6661 /* displayVertexShader.vs in Resources */,
-				C972D3E720F7450C00FD6661 /* displayFragmentShader.fs in Resources */,
+				C956FFA4211038AA008E647E /* displayVertexShader.vs in Resources */,
 				C972D33E20F7314D00FD6661 /* LaunchScreen.storyboard in Resources */,
+				C956FFA3211038AA008E647E /* play_button@3x.png in Resources */,
 				C972D33B20F7314D00FD6661 /* Assets.xcassets in Resources */,
 				C96FB66321098C8600004309 /* movie.mkv in Resources */,
 				C972D33920F7314B00FD6661 /* Main.storyboard in Resources */,
-				C9A4B7E520F8A3DA006F5FE9 /* play_button@3x.png in Resources */,
+				C956FF9E211038AA008E647E /* displayFragmentShader.fs in Resources */,
+				C956FFAF21104434008E647E /* test.mp4 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -574,16 +616,22 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C956FFB121104463008E647E /* test.mp4 in Sources */,
+				C956FFB021104449008E647E /* movie.mkv in Sources */,
 				C972D33620F7314B00FD6661 /* ViewController.m in Sources */,
-				C9C9802F2108614000503F1A /* HePlayerProgressView.m in Sources */,
-				C972D3EA20F7450C00FD6661 /* HePlayerView.m in Sources */,
-				C972D3E920F7450C00FD6661 /* HeMediaAnalyser.m in Sources */,
+				C956FFA6211038AA008E647E /* HePlayer.m in Sources */,
+				C956FFAD21103A61008E647E /* AVPlayerView.m in Sources */,
+				C956FFA921103941008E647E /* AVPlayerViewController.m in Sources */,
+				C956FFA1211038AA008E647E /* HeYUV420PictureQueue.m in Sources */,
+				C956FFB821104C82008E647E /* VLCPlayerView.m in Sources */,
+				C956FFA2211038AA008E647E /* HePlayerView.m in Sources */,
+				C956FF9F211038AA008E647E /* EGL_Program.m in Sources */,
+				C956FF9D211038AA008E647E /* HePlayerProgressView.m in Sources */,
+				C956FFA5211038AA008E647E /* HeAudioDataQueue.m in Sources */,
 				C972D34120F7314D00FD6661 /* main.m in Sources */,
 				C972D33320F7314B00FD6661 /* AppDelegate.m in Sources */,
-				C972D3E820F7450C00FD6661 /* EGL_Program.m in Sources */,
-				C9E9224320FF30F100CD4CE7 /* HeYUV420PictureQueue.m in Sources */,
-				C9A4B7E820F8C12A006F5FE9 /* HeAudioDataQueue.m in Sources */,
-				C972D3EC20F7450C00FD6661 /* HePlayer.m in Sources */,
+				C956FF8A21103633008E647E /* FFmpegViewController.m in Sources */,
+				C956FFA0211038AA008E647E /* HeMediaAnalyser.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

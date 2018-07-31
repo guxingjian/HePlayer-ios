@@ -1,23 +1,47 @@
 //
 //  ViewController.m
-//  he_player
+//  CommonComponent_heqz
 //
-//  Created by qingzhao on 2018/7/12.
-//  Copyright © 2018年 qingzhao. All rights reserved.
+//  Created by work_lenovo on 2017/9/11.
+//  Copyright © 2017年 work_lenovo. All rights reserved.
 //
 
 #import "ViewController.h"
-#import "HePlayerView.h"
 
-#define SCREEN_HEIGHT CGRectGetHeight([[UIScreen mainScreen] bounds])
-#define SCREEN_WIDTH  CGRectGetWidth([[UIScreen mainScreen] bounds])
+#define CELL_HEIGHT 100
 
-#define SCREEN_MIN MIN(SCREEN_HEIGHT,SCREEN_WIDTH)
-#define SCREEN_MAX MAX(SCREEN_HEIGHT,SCREEN_WIDTH)
+@interface DemoModel : NSObject
 
-@interface ViewController ()
+@property(nonatomic, strong)NSString* strDemoName;
+@property(nonatomic, strong)NSString* strDemoClass;
 
-@property(nonatomic, strong)HePlayerView* playView;
++ (instancetype)modelWithDemoName:(NSString*)demoName demoClass:(NSString*)demoClass;
+
+@end
+
+@implementation DemoModel
+
++ (instancetype)modelWithDemoName:(NSString *)demoName demoClass:(NSString *)demoClass
+{
+    return [[self alloc] initWithDemoName:demoName demoClass:demoClass];
+}
+
+- (instancetype)initWithDemoName:(NSString *)demoName demoClass:(NSString *)demoClass
+{
+    if(self = [super init])
+    {
+        _strDemoName = demoName;
+        _strDemoClass = demoClass;
+    }
+    
+    return self;
+}
+
+@end
+
+@interface ViewController ()<UITableViewDataSource, UITableViewDelegate>
+
+@property(nonatomic, strong)NSArray* demoList;
 
 @end
 
@@ -27,35 +51,98 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
     
-    NSString* strVideoPath = [[NSBundle mainBundle] pathForResource:@"movie.mkv" ofType:nil];
-//    NSString* strVideoPath = @"rtmp://47.93.220.12:1935/live/heqz";
-//    NSString* strVideoPath = @"http://47.93.220.12:80/video/movie.mkv";
-//    NSString* strVideoPath = @"http://localhost:8088/video/movie.mkv";
-    HePlayerView* playerView = [[HePlayerView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height) mediaPath:strVideoPath];
-    [self.view addSubview:playerView];
-    self.playView = playerView;
+    [self buildInterface];
 }
 
-- (BOOL)shouldAutorotate
+- (NSArray *)demoList
 {
-    return YES;
-}
-
-- (UIInterfaceOrientationMask)supportedInterfaceOrientations
-{
-    return UIInterfaceOrientationMaskAllButUpsideDown;
-}
-
-- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id <UIViewControllerTransitionCoordinator>)coordinator
-{
-    if(CGSizeEqualToSize(size, CGSizeMake(SCREEN_MIN, SCREEN_MAX)))
+    if(!_demoList)
     {
-        self.playView.frame = CGRectMake(0, 100, SCREEN_MIN, 300);
+        NSMutableArray* array = [NSMutableArray array];
+        
+        DemoModel* ffmpegModel = [DemoModel modelWithDemoName:@"ffmpeg 播放器" demoClass:@"FFmpegViewController"];
+        [array addObject:ffmpegModel];
+        
+        DemoModel* avPalyerModel = [DemoModel modelWithDemoName:@"AVPlayer 播放器" demoClass:@"AVPlayerViewController"];
+        [array addObject:avPalyerModel];
+
+        _demoList = array;
     }
-    else if(CGSizeEqualToSize(size, CGSizeMake(SCREEN_MAX, SCREEN_MIN)))
+    
+    return _demoList;
+}
+
+- (void)buildInterface
+{
+    self.title = @"player列表";
+    
+    UITableView* tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    [self.view addSubview:tableView];
+    
+    tableView.dataSource = self;
+    tableView.delegate = self;
+    tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+}
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
+    return 1;
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return self.demoList.count;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return CELL_HEIGHT;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSString* strCell = @"cell";
+    UITableViewCell* cell = [tableView dequeueReusableCellWithIdentifier:strCell];
+    if(!cell)
     {
-        self.playView.frame = CGRectMake(0, 0, SCREEN_MAX, SCREEN_MIN);
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:strCell];
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
     }
+    
+    for(UIView* subView in cell.contentView.subviews)
+    {
+        [subView removeFromSuperview];
+    }
+    
+    UILabel* labelName = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, CELL_HEIGHT)];
+    [cell.contentView addSubview:labelName];
+    
+    DemoModel* model = [self.demoList objectAtIndex:indexPath.row];
+    labelName.text = model.strDemoName;
+    labelName.font = [UIFont systemFontOfSize:15];
+    labelName.textColor = [UIColor blackColor];
+    labelName.textAlignment = NSTextAlignmentCenter;
+    
+    CGFloat fFac = 1/[UIScreen mainScreen].scale;
+    UIView* lineView = [[UIView alloc] initWithFrame:CGRectMake(10, CELL_HEIGHT - fFac, self.view.bounds.size.width - 20, fFac)];
+    lineView.backgroundColor = [UIColor grayColor];
+    [cell.contentView addSubview:lineView];
+    
+    return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    DemoModel* model = [self.demoList objectAtIndex:indexPath.row];
+    Class class = NSClassFromString(model.strDemoClass);
+    if(![class isSubclassOfClass:[UIViewController class]])
+    {
+        return ;
+    }
+    
+    UIViewController* vc = [[class alloc] init];
+    vc.title = model.strDemoName;
+    [self.navigationController pushViewController:vc animated:YES];
 }
 
 - (void)didReceiveMemoryWarning {

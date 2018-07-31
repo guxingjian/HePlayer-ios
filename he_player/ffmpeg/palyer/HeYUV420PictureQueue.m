@@ -15,6 +15,7 @@
     yuv420_picture* _head_pic;
     yuv420_picture* _tail_pic;
     int _picCount;
+    int _nBytes;
     NSCondition* _condition;
 }
 
@@ -22,6 +23,11 @@
 {
     HeYUV420PictureQueue* queue = [[HeYUV420PictureQueue alloc] initWithStorageSize:size];
     return queue;
+}
+
+- (void)dealloc
+{
+    [self clear];
 }
 
 - (instancetype)initWithStorageSize:(CGSize)size
@@ -111,7 +117,7 @@
     pic = _head_pic;
     _head_pic = _head_pic->next;
     _picCount --;
-//    NSLog(@"getPicture pic count: %d", _picCount);
+    NSLog(@"getPicture pic count: %d", _picCount);
     int nBytes = _nW*_nH;
     _nBytes -= (int)1.5*nBytes;
     if(0 == _picCount)

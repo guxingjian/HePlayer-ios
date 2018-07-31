@@ -21,6 +21,7 @@
 
 #define BUFFER_COUNT 3
 #define SEEK_STEP 5
+#define PRECACHE_SECONDS 5
 
 static HeMediaAnalyser* producerAnalyzer = nil;
 static HeMediaAnalyser* customerAnalyzer = nil;
@@ -220,6 +221,8 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     
     AVRational timeBase = _formatContext->streams[_audioStream]->time_base;
     _audioTimeBase = (CGFloat)timeBase.num/timeBase.den;
+    
+    _audioBufferQueue.nCacheBytes = (out_nb_channels*16*out_sample_rate)/8*PRECACHE_SECONDS;
 }
 
 - (void)setupSwrContext
@@ -292,6 +295,9 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     
     AVRational timeBase = _formatContext->streams[_videoStream]->time_base;
     _videoTimeBase = (CGFloat)timeBase.num/timeBase.den;
+    
+    int nRate = av_q2d(_pVideoCodecCtx->framerate);
+    _pictureQueue.nCacheCount = nRate*PRECACHE_SECONDS;
 }
 
 - (void)clearAudioBuffer
@@ -323,7 +329,6 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         else
         {
             int ret = av_read_frame(_formatContext, &packet);
-            NSLog(@"ret: %d", ret);
             if(0 == ret)
             {
                 if(packet.stream_index == _videoStream)
@@ -456,11 +461,12 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)showVideoFrame
 {
-    static NSTimer* refreshTimer = nil;
+    static CADisplayLink* refreshTimer = nil;
     if(!customerAnalyzer.bCanPlay)
     {
         [refreshTimer invalidate];
         refreshTimer = nil;
+        [_pictureQueue clear];
         customerAnalyzer = nil;
         return ;
     }
@@ -493,37 +499,36 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
             self->frame_timer += step;
             double diff = self->frame_timer - self->_audio_clock;
             
-            if(diff < -0.04)
+            if(diff < -0.03)
             {
-                step = step - 0.04;
+                step = step - 0.03;
             }
-            else if(diff > 0.04)
+            else if(diff > 0.03)
             {
-                step = step + 0.04;
+                step = step + 0.03;
             }
         }
         self->frame_last_pts = pic->pts;
         
-        if(step < 0.01)
+        if(step < 0.012)
         {
-            step = 0.01;
+            step = 0.012;
         }
-        else if(step > 0.06)
+        else if(step > 0.07)
         {
-            step = 0.06;
+            step = 0.07;
         }
-//        NSLog(@"step: %f", step);
+        NSLog(@"step: %f", step);
         
         if (!refreshTimer) {
-            refreshTimer = [NSTimer timerWithTimeInterval:step target:self selector:@selector(showVideoFrame) userInfo:nil repeats:YES];
+//            refreshTimer = [NSTimer timerWithTimeInterval:step target:self selector:@selector(showVideoFrame) userInfo:nil repeats:YES];
+            refreshTimer = [CADisplayLink displayLinkWithTarget:self selector:@selector(showVideoFrame)];
+            
             NSRunLoop* threadRunloop = [NSRunLoop currentRunLoop];
-            [threadRunloop addTimer:refreshTimer forMode:NSRunLoopCommonModes];
+            [refreshTimer addToRunLoop:threadRunloop forMode:NSRunLoopCommonModes];
             [threadRunloop run];
         }
-        else
-        {
-            refreshTimer.fireDate = [NSDate dateWithTimeIntervalSinceNow:step];
-        }
+        refreshTimer.frameInterval = 60*step;
         
         [_pictureQueue freePicture:pic];
     }

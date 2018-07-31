@@ -1,9 +1,9 @@
 //
 //  ViewController.h
-//  he_player
+//  CommonComponent_heqz
 //
-//  Created by qingzhao on 2018/7/12.
-//  Copyright © 2018年 qingzhao. All rights reserved.
+//  Created by work_lenovo on 2017/9/11.
+//  Copyright © 2017年 work_lenovo. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
