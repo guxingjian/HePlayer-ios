@@ -21,8 +21,8 @@
     
     self.view.backgroundColor = [UIColor whiteColor];
     
-    NSURL* strVideoPath = [[NSBundle mainBundle] URLForResource:@"test.mp4" withExtension:nil];
-//    NSString* strVideoPath = @"http://47.93.220.12/test.mp4";
+//    NSURL* strVideoPath = [[NSBundle mainBundle] URLForResource:@"test.mp4" withExtension:nil];
+    NSString* strVideoPath = @"http://47.93.220.12/video/movie.mp4";
     
     AVPlayerView* playerView = [[AVPlayerView alloc] initWithFrame:CGRectMake(0, 80, self.view.bounds.size.width, 300) mediaPath:strVideoPath];
     [self.view addSubview:playerView];

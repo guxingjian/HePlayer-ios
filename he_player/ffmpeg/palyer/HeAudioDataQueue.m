@@ -97,27 +97,33 @@
 //    NSLog(@"audio count: %d", _bufCount);
     _nBytes += buffer->size;
     
-    [_condition signal];
+//    [_condition signal];
     [_condition unlock];
 }
 
 - (audio_buffer *)getBuffer
 {
     [_condition lock];
-    while(_bufCount == 0)
-    {
-        [_condition wait];
-    }
+//    while(_bufCount == 0)
+//    {
+//        [_condition wait];
+//    }
     
+    if(_bufCount == 0)
+    {
+        [_condition unlock];
+        return [self idleAudioBuffer];
+    }
     audio_buffer* head = _head_buf;
     _head_buf = head->next;
     _bufCount --;
-    NSLog(@"getBuffer audio count: %d", _bufCount);
+//    NSLog(@"getBuffer audio count: %d", _bufCount);
     _nBytes -= head->size;
     if(0 == _bufCount)
     {
         _tail_buf = 0;
         _nBytes = 0;
+        self.shouldCacheData = YES;
     }
     
     [_condition signal];

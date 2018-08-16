@@ -30,10 +30,10 @@
     
     self.view.backgroundColor = [UIColor whiteColor];
     
-        NSString* strVideoPath = [[NSBundle mainBundle] pathForResource:@"movie3.mkv" ofType:nil];
+//        NSString* strVideoPath = [[NSBundle mainBundle] pathForResource:@"movie.mkv" ofType:nil];
     //    NSString* strVideoPath = @"rtmp://47.93.220.12:1935/live/heqz";
-//    NSString* strVideoPath = @"http://47.93.220.12:80/movie.mkv";
-    //    NSString* strVideoPath = @"http://localhost:8088/video/movie.mkv";
+    NSString* strVideoPath = @"http://47.93.220.12/video/movie.mkv";
+//        NSString* strVideoPath = @"http://localhost:8088/video/movie.mkv";
     HePlayerView* playerView = [[HePlayerView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height) mediaPath:strVideoPath];
     [self.view addSubview:playerView];
     self.playView = playerView;

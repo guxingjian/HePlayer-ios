@@ -37,7 +37,7 @@
         _nW = size.width;
         _nH = size.height;
         _condition = [[NSCondition alloc] init];
-        self.maxBytes = 1024*1024*30;
+        self.maxBytes = 1024*1024*500;
     }
     return self;
 }
@@ -117,7 +117,7 @@
     pic = _head_pic;
     _head_pic = _head_pic->next;
     _picCount --;
-    NSLog(@"getPicture pic count: %d", _picCount);
+//    NSLog(@"getPicture pic count: %d", _picCount);
     int nBytes = _nW*_nH;
     _nBytes -= (int)1.5*nBytes;
     if(0 == _picCount)

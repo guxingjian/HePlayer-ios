@@ -20,6 +20,7 @@ typedef struct audio_buffer{
 
 @property(nonatomic, assign)int maxBytes;
 @property(nonatomic, assign)int nCacheBytes;
+@property(atomic, assign)int shouldCacheData;
 
 - (instancetype)initWithBufferSize:(NSInteger)size;
 

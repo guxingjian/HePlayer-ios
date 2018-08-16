@@ -32,9 +32,17 @@
     if(self = [super initWithFrame:frame])
     {
         self.strUrl = strUrl;
+        [self setupAudioSession];
         [self setUpPlayer];
     }
     return self;
+}
+
+- (void)setupAudioSession
+{
+    AVAudioSession* session = [AVAudioSession sharedInstance];
+    [session setCategory:AVAudioSessionCategoryPlayback error:nil];
+    [session setActive:YES error:nil];
 }
 
 - (void)setUpPlayer

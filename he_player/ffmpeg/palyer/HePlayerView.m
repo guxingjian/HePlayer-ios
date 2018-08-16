@@ -8,6 +8,7 @@
 
 #import "HePlayerView.h"
 #import "HePlayer.h"
+#import <AVFoundation/AVFoundation.h>
 
 @interface HePlayerView()
 
@@ -41,6 +42,10 @@
 
 - (void)setupPlayerWithPath:(NSString*)path
 {
+    AVAudioSession* session = [AVAudioSession sharedInstance];
+    [session setCategory:AVAudioSessionCategoryPlayback error:nil];
+    [session setActive:YES error:nil];
+    
     self.player = [[HePlayer alloc] initWithMediaPath:path renderView:self];
 }
 

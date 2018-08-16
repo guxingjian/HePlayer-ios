@@ -23,6 +23,8 @@
 #define SEEK_STEP 5
 #define PRECACHE_SECONDS 5
 
+static uint64_t out_channel_layout = AV_CH_LAYOUT_STEREO;//声道格式
+
 static HeMediaAnalyser* producerAnalyzer = nil;
 static HeMediaAnalyser* customerAnalyzer = nil;
 
@@ -39,6 +41,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 @property(atomic, assign)BOOL audioClearFlag;
 @property(atomic, assign)BOOL pictureClearFlag;
 @property(atomic, assign)uint64_t seekTime;
+@property(atomic, assign)double cacheStartTime;
 
 @end
 
@@ -66,6 +69,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     AudioQueueBufferRef buffers[BUFFER_COUNT];
     HeAudioDataQueue* _audioBufferQueue;
     SwrContext* swrContext;
+    dispatch_queue_t _audioDispatchQueue;
     
     CGFloat _videoTimeBase;
     CGFloat _audioTimeBase;
@@ -190,8 +194,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     _audioFrame = av_frame_alloc();
     _pAudioCodecCtx = pAudioCodecCtx;
     _pAudioCodec = pCodec;
-
-    uint64_t out_channel_layout = AV_CH_LAYOUT_STEREO;//声道格式
+    
     enum AVSampleFormat out_sample_fmt = AV_SAMPLE_FMT_S16;//采样格式
     int out_sample_rate = 48000;//采样率
     
@@ -208,13 +211,21 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     des.mReserved = 0;
     
     int nBufferSize = av_samples_get_buffer_size(NULL, out_nb_channels, _pAudioCodecCtx->frame_size, out_sample_fmt, 1);
-    void *p = (__bridge void *) self;
-    AudioQueueNewOutput(&des, HandleOutputBufferCallBack, p,nil, nil, 0, &queueRef);
+//    void *p = (__bridge void *) self;
+//    AudioQueueNewOutput(&des, HandleOutputBufferCallBack, p,nil, nil, 0, &queueRef);
+    
+    _audioDispatchQueue = dispatch_queue_create("audioqueue", DISPATCH_QUEUE_SERIAL);
+    
+    __weak typeof(self) weakSelf = self;
+    AudioQueueNewOutputWithDispatchQueue(&queueRef, &des, 0, _audioDispatchQueue, ^(AudioQueueRef  _Nonnull inAQ, AudioQueueBufferRef  _Nonnull inBuffer) {
+        [weakSelf pickAudioPacketWithBuffer:inBuffer];
+    });
+    
     for(int i = 0 ; i < BUFFER_COUNT ; i ++){
         AudioQueueAllocateBuffer(queueRef, nBufferSize, &buffers[i]);
     }
     
-    Float32 gain = 1.0;
+    Float32 gain = 5.0;
     AudioQueueSetParameter(queueRef, kAudioQueueParam_Volume, gain);
     _audioBufferQueue = [[HeAudioDataQueue alloc] initWithBufferSize:nBufferSize];
     [self setupSwrContext];
@@ -234,7 +245,6 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         return ;
     }
     
-    uint64_t out_channel_layout = AV_CH_LAYOUT_STEREO;//声道格式
     enum AVSampleFormat out_sample_fmt = AV_SAMPLE_FMT_S16;//采样格式
     int out_sample_rate = 48000;//采样率
     swr_alloc_set_opts(swrContext, out_channel_layout, out_sample_fmt,out_sample_rate,
@@ -374,6 +384,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     ret = avcodec_receive_frame(_pVideoCodecCtx, _pFrame);
     if(ret != 0)
         return ;
+    
     if(self.bShouldConvert)
     {
         sws_scale(swsContext, (const unsigned char* const*)_pFrame->data, _pFrame->linesize, 0, _pVideoCodecCtx->height,
@@ -415,6 +426,17 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
                 [self setupSwrContext];
             }
         }
+        if(_audioBufferQueue.shouldCacheData)
+        {
+            double fInterval = audioBuf->pts - self.cacheStartTime;
+            NSLog(@"fInterval: %f", fInterval);
+            if(fInterval >= 10)
+            {
+                _audioBufferQueue.shouldCacheData = NO;
+                self.bPause = NO;
+            }
+        }
+        
         av_frame_unref(_audioFrame);
     }
 }
@@ -489,16 +511,17 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     {
         yuv420_picture* pic = [_pictureQueue getPicture];
         pic->pts = pic->pts*_videoTimeBase;
+        
         [self.delegate mediaAnalyser:self decodeVideo:pic frameSize:CGSizeMake(_pVideoCodecCtx->width, _pVideoCodecCtx->height)];
         
         //计算帧率，平均每帧间隔时间
-        double step = 0.20;
+        double step = 0.41;
         if(self->frame_last_pts != 0)
         {
             step = pic->pts - self->frame_last_pts;
             self->frame_timer += step;
             double diff = self->frame_timer - self->_audio_clock;
-            
+
             if(diff < -0.03)
             {
                 step = step - 0.03;
@@ -509,7 +532,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
             }
         }
         self->frame_last_pts = pic->pts;
-        
+
         if(step < 0.012)
         {
             step = 0.012;
@@ -528,14 +551,13 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
             [refreshTimer addToRunLoop:threadRunloop forMode:NSRunLoopCommonModes];
             [threadRunloop run];
         }
-        refreshTimer.frameInterval = 60*step;
+        refreshTimer.preferredFramesPerSecond = 60*step;
         
         [_pictureQueue freePicture:pic];
     }
     else
     {
         while (self.bPause) {
-            
         }
         [self showVideoFrame];
     }
@@ -579,6 +601,12 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         AudioQueueEnqueueBuffer(queueRef, bufferRef, 0, nil);
         [_audioBufferQueue freeBuffer:audioBuffer];
         self.audio_clock = fTime;
+        
+        if(_audioBufferQueue.shouldCacheData)
+        {
+            self.cacheStartTime = fTime;
+            self.bPause = YES;
+        }
     }
     else
     {
