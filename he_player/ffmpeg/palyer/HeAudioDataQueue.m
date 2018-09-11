@@ -28,12 +28,13 @@
     [self clear];
 }
 
-- (instancetype)initWithBufferSize:(NSInteger)size
+- (instancetype)initWithBufferSize:(NSInteger)size delegate:(id<HeDataQueueDelegate>)delegate
 {
     if(self = [super init])
     {
         self.nSize = size;
         self.maxBytes = 1024*1024*15;
+        self.delegate = delegate;
     }
     return self;
 }
@@ -81,6 +82,13 @@
     [_condition lock];
     while(_nBytes >= self.maxBytes)
     {
+        if(self.bShouldCache)
+        {
+            if([self.delegate respondsToSelector:@selector(dataQueueReachMaxCapacity)])
+            {
+                [self.delegate dataQueueReachMaxCapacity];
+            }
+        }
         [_condition wait];
     }
     
@@ -112,8 +120,10 @@
     if(_bufCount == 0)
     {
         [_condition unlock];
-        return [self idleAudioBuffer];
+        [self setShouldCache];
+        return 0;
     }
+
     audio_buffer* head = _head_buf;
     _head_buf = head->next;
     _bufCount --;
@@ -123,12 +133,21 @@
     {
         _tail_buf = 0;
         _nBytes = 0;
-        self.shouldCacheData = YES;
+        [self setShouldCache];
     }
     
     [_condition signal];
     [_condition unlock];
     return head;
+}
+
+- (void)setShouldCache
+{
+    self.bShouldCache = YES;
+    if([self.delegate respondsToSelector:@selector(dataQueueStartCacheData)])
+    {
+        [self.delegate dataQueueStartCacheData];
+    }
 }
 
 - (void)freeBuffer:(audio_buffer *)buffer

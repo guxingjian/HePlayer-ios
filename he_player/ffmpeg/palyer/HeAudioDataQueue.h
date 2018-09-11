@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import "libavformat/avformat.h"
+#import "HEDataQeueuProtocol.h"
 
 typedef struct audio_buffer{
     uint8_t* buffer;
@@ -20,10 +21,10 @@ typedef struct audio_buffer{
 
 @property(nonatomic, assign)int maxBytes;
 @property(nonatomic, assign)int nCacheBytes;
-@property(atomic, assign)int shouldCacheData;
+@property(atomic, assign)BOOL bShouldCache;
+@property(nonatomic, weak)id<HeDataQueueDelegate> delegate;
 
-- (instancetype)initWithBufferSize:(NSInteger)size;
-
+- (instancetype)initWithBufferSize:(NSInteger)size delegate:(id<HeDataQueueDelegate>)delegate;
 
 - (audio_buffer*)idleAudioBuffer;
 - (void)putBuffer:(audio_buffer*)buffer;

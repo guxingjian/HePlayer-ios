@@ -18,6 +18,7 @@
 
 #import <AudioUnit/AudioUnit.h>
 #import <AudioToolbox/AudioToolbox.h>
+#import "HEDataQeueuProtocol.h"
 
 #define BUFFER_COUNT 3
 #define SEEK_STEP 5
@@ -30,7 +31,7 @@ static HeMediaAnalyser* customerAnalyzer = nil;
 
 void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBufferRef inBuffer);
 
-@interface HeMediaAnalyser()
+@interface HeMediaAnalyser()<HeDataQueueDelegate>
 
 @property(nonatomic, strong)NSString* strPath;
 @property(nonatomic, assign)BOOL bShouldConvert;
@@ -42,6 +43,8 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 @property(atomic, assign)BOOL pictureClearFlag;
 @property(atomic, assign)uint64_t seekTime;
 @property(atomic, assign)double cacheStartTime;
+@property(nonatomic, assign)double cacheInterval;
+@property(atomic, weak)CADisplayLink* videoRefreshTimer;
 
 @end
 
@@ -103,6 +106,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     {
         self.strPath = path;
         self.delegate = delegate;
+        self.cacheInterval = 1.0;
         [self setupAnalyser];
     }
     return self;
@@ -227,7 +231,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     
     Float32 gain = 5.0;
     AudioQueueSetParameter(queueRef, kAudioQueueParam_Volume, gain);
-    _audioBufferQueue = [[HeAudioDataQueue alloc] initWithBufferSize:nBufferSize];
+    _audioBufferQueue = [[HeAudioDataQueue alloc] initWithBufferSize:nBufferSize delegate:self];
     [self setupSwrContext];
     
     AVRational timeBase = _formatContext->streams[_audioStream]->time_base;
@@ -301,7 +305,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         self.bShouldConvert = YES;
     }
     self.bCanPlay = YES;
-    _pictureQueue = [HeYUV420PictureQueue pictureQueueWithStorageSize:CGSizeMake(pVideoCodecCtx->width, pVideoCodecCtx->height)];
+    _pictureQueue = [HeYUV420PictureQueue pictureQueueWithStorageSize:CGSizeMake(pVideoCodecCtx->width, pVideoCodecCtx->height) delegate:self];
     
     AVRational timeBase = _formatContext->streams[_videoStream]->time_base;
     _videoTimeBase = (CGFloat)timeBase.num/timeBase.den;
@@ -385,17 +389,58 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     if(ret != 0)
         return ;
     
+    AVFrame* frame = nil;
     if(self.bShouldConvert)
     {
         sws_scale(swsContext, (const unsigned char* const*)_pFrame->data, _pFrame->linesize, 0, _pVideoCodecCtx->height,
                   _yuvFrame->data, _yuvFrame->linesize);
         [_pictureQueue addPictureWithFrame:_yuvFrame];
+        frame = _yuvFrame;
     }
     else
     {
         [_pictureQueue addPictureWithFrame:_pFrame];
+        frame = _pFrame;
     }
+    
+    [self cacheVideoAndAudioWithPts:(frame->pts*_videoTimeBase)];
     av_frame_unref(_pFrame);
+}
+
+- (void)cacheVideoAndAudioWithPts:(double)pts
+{
+    if(!_pictureQueue.bShouldCache && !_audioBufferQueue.bShouldCache)
+        return ;
+    
+    double fInterval = pts - self.cacheStartTime;
+    double targetInverval = self.cacheInterval;
+    
+    if(fInterval > targetInverval)
+    {
+        [self stopCache];
+    }
+}
+
+- (void)stopCache
+{
+    self.cacheInterval = 5;
+    _pictureQueue.bShouldCache = NO;
+    _audioBufferQueue.bShouldCache = NO;
+    self.bPause = NO;
+    
+    if(!self.videoRefreshTimer)
+    {
+        [self playoutVideoAndAudio];
+    }
+    else
+    {
+        void *p = (__bridge void *) self;
+        for(int i = 0 ; i < BUFFER_COUNT ; i ++){
+            HandleOutputBufferCallBack(p, self->queueRef, self->buffers[i]);
+        }
+    }
+    
+    AudioQueueStart(queueRef, 0);
 }
 
 - (void)handAudioPacket:(AVPacket*)packet
@@ -426,18 +471,10 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
                 [self setupSwrContext];
             }
         }
-        if(_audioBufferQueue.shouldCacheData)
-        {
-            double fInterval = audioBuf->pts - self.cacheStartTime;
-            NSLog(@"fInterval: %f", fInterval);
-            if(fInterval >= 10)
-            {
-                _audioBufferQueue.shouldCacheData = NO;
-                self.bPause = NO;
-            }
-        }
         
         av_frame_unref(_audioFrame);
+        
+        [self cacheVideoAndAudioWithPts:audioBuf->pts];
     }
 }
 
@@ -462,18 +499,30 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
             [ws analyseVideoAndAudio];
         });
         
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            [ws showVideoFrame];
-        });
-        
+        [self playoutVideoAndAudio];
+        self.bIsAnalysing = YES;
+    }
+    else
+    {
         void *p = (__bridge void *) self;
         for(int i = 0 ; i < BUFFER_COUNT ; i ++){
             HandleOutputBufferCallBack(p, self->queueRef, self->buffers[i]);
         }
-        
-        self.bIsAnalysing = YES;
     }
     AudioQueueStart(queueRef, NULL);
+}
+
+- (void)playoutVideoAndAudio
+{
+     __weak typeof(self) ws = self;
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        [ws showVideoFrame];
+    });
+    
+    void *p = (__bridge void *) self;
+    for(int i = 0 ; i < BUFFER_COUNT ; i ++){
+        HandleOutputBufferCallBack(p, self->queueRef, self->buffers[i]);
+    }
 }
 
 - (double)get_audio_clock
@@ -483,6 +532,9 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)showVideoFrame
 {
+    if(self.bPause)
+        return ;
+    
     static CADisplayLink* refreshTimer = nil;
     if(!customerAnalyzer.bCanPlay)
     {
@@ -507,60 +559,56 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         return ;
     }
     
-    if(!self.bPause)
+    yuv420_picture* pic = [_pictureQueue getPicture];
+    if(!pic)
     {
-        yuv420_picture* pic = [_pictureQueue getPicture];
-        pic->pts = pic->pts*_videoTimeBase;
+        return ;
+    }
+    pic->pts = pic->pts*_videoTimeBase;
+    
+    [self.delegate mediaAnalyser:self decodeVideo:pic frameSize:CGSizeMake(_pVideoCodecCtx->width, _pVideoCodecCtx->height)];
+    
+    //计算帧率，平均每帧间隔时间
+    double step = 0.41;
+    if(self->frame_last_pts != 0)
+    {
+        step = pic->pts - self->frame_last_pts;
+        self->frame_timer += step;
+        double diff = self->frame_timer - self->_audio_clock;
         
-        [self.delegate mediaAnalyser:self decodeVideo:pic frameSize:CGSizeMake(_pVideoCodecCtx->width, _pVideoCodecCtx->height)];
-        
-        //计算帧率，平均每帧间隔时间
-        double step = 0.41;
-        if(self->frame_last_pts != 0)
+        if(diff < -0.03)
         {
-            step = pic->pts - self->frame_last_pts;
-            self->frame_timer += step;
-            double diff = self->frame_timer - self->_audio_clock;
-
-            if(diff < -0.03)
-            {
-                step = step - 0.03;
-            }
-            else if(diff > 0.03)
-            {
-                step = step + 0.03;
-            }
+            step = step - 0.03;
         }
-        self->frame_last_pts = pic->pts;
-
-        if(step < 0.012)
+        else if(diff > 0.03)
         {
-            step = 0.012;
+            step = step + 0.03;
         }
-        else if(step > 0.07)
-        {
-            step = 0.07;
-        }
-        NSLog(@"step: %f", step);
-        
-        if (!refreshTimer) {
-//            refreshTimer = [NSTimer timerWithTimeInterval:step target:self selector:@selector(showVideoFrame) userInfo:nil repeats:YES];
-            refreshTimer = [CADisplayLink displayLinkWithTarget:self selector:@selector(showVideoFrame)];
-            
-            NSRunLoop* threadRunloop = [NSRunLoop currentRunLoop];
-            [refreshTimer addToRunLoop:threadRunloop forMode:NSRunLoopCommonModes];
-            [threadRunloop run];
-        }
+    }
+    self->frame_last_pts = pic->pts;
+    
+    if(step < 0.012)
+    {
+        step = 0.012;
+    }
+    else if(step > 0.07)
+    {
+        step = 0.07;
+    }
+    NSLog(@"step: %f", step);
+    
+    if (!refreshTimer) {
+        //            refreshTimer = [NSTimer timerWithTimeInterval:step target:self selector:@selector(showVideoFrame) userInfo:nil repeats:YES];
+        refreshTimer = [CADisplayLink displayLinkWithTarget:self selector:@selector(showVideoFrame)];
         refreshTimer.preferredFramesPerSecond = 60*step;
-        
-        [_pictureQueue freePicture:pic];
+        NSRunLoop* threadRunloop = [NSRunLoop currentRunLoop];
+        [refreshTimer addToRunLoop:threadRunloop forMode:NSRunLoopCommonModes];
+        [threadRunloop run];
     }
-    else
-    {
-        while (self.bPause) {
-        }
-        [self showVideoFrame];
-    }
+    refreshTimer.preferredFramesPerSecond = 60*step;
+    self.videoRefreshTimer = refreshTimer;
+    
+    [_pictureQueue freePicture:pic];
 }
 
 - (void)pause
@@ -582,6 +630,9 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)pickAudioPacketWithBuffer:(AudioQueueBufferRef)bufferRef
 {
+    if(self.bPause)
+        return ;
+    
     if(self.audioClearFlag)
     {
         [self clearAudioBuffer];
@@ -592,29 +643,16 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         self.audio_clock = 0;
         return ;
     }
-    if(!self.bPause)
-    {
-        audio_buffer* audioBuffer = [_audioBufferQueue getBuffer];
-        CGFloat fTime = audioBuffer->pts;
-        memcpy(bufferRef->mAudioData, audioBuffer->buffer, audioBuffer->size);
-        bufferRef->mAudioDataByteSize = (UInt32)audioBuffer->size;
-        AudioQueueEnqueueBuffer(queueRef, bufferRef, 0, nil);
-        [_audioBufferQueue freeBuffer:audioBuffer];
-        self.audio_clock = fTime;
-        
-        if(_audioBufferQueue.shouldCacheData)
-        {
-            self.cacheStartTime = fTime;
-            self.bPause = YES;
-        }
-    }
-    else
-    {
-        while (self.bPause) {
-            
-        }
-        [self pickAudioPacketWithBuffer:bufferRef];
-    }
+    
+    audio_buffer* audioBuffer = [_audioBufferQueue getBuffer];
+    if(!audioBuffer)
+        return ;
+    CGFloat fTime = audioBuffer->pts;
+    memcpy(bufferRef->mAudioData, audioBuffer->buffer, audioBuffer->size);
+    bufferRef->mAudioDataByteSize = (UInt32)audioBuffer->size;
+    AudioQueueEnqueueBuffer(queueRef, bufferRef, 0, nil);
+    [_audioBufferQueue freeBuffer:audioBuffer];
+    self.audio_clock = fTime;
 }
 
 - (void)seekForward
@@ -667,6 +705,20 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     
     avcodec_flush_buffers(_pAudioCodecCtx);
     avcodec_flush_buffers(_pVideoCodecCtx);
+}
+
+- (void)dataQueueStartCacheData
+{
+    [self pause];
+    self.cacheStartTime = self.audio_clock;
+}
+
+- (void)dataQueueReachMaxCapacity
+{
+    if(!_pictureQueue.bShouldCache && !_audioBufferQueue.bShouldCache)
+        return ;
+    
+    [self stopCache];
 }
 
 @end

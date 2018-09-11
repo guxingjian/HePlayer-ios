@@ -19,9 +19,9 @@
     NSCondition* _condition;
 }
 
-+ (instancetype)pictureQueueWithStorageSize:(CGSize)size
++ (instancetype)pictureQueueWithStorageSize:(CGSize)size delegate:(id<HeDataQueueDelegate>)delegate
 {
-    HeYUV420PictureQueue* queue = [[HeYUV420PictureQueue alloc] initWithStorageSize:size];
+    HeYUV420PictureQueue* queue = [[HeYUV420PictureQueue alloc] initWithStorageSize:size delegate:delegate];
     return queue;
 }
 
@@ -30,7 +30,7 @@
     [self clear];
 }
 
-- (instancetype)initWithStorageSize:(CGSize)size
+- (instancetype)initWithStorageSize:(CGSize)size delegate:(id<HeDataQueueDelegate>)delegate
 {
     if(self = [super init])
     {
@@ -38,6 +38,7 @@
         _nH = size.height;
         _condition = [[NSCondition alloc] init];
         self.maxBytes = 1024*1024*500;
+        self.delegate = delegate;
     }
     return self;
 }
@@ -47,6 +48,13 @@
     [_condition lock];
     while(_nBytes >= self.maxBytes)
     {
+        if(self.bShouldCache)
+        {
+            if([self.delegate respondsToSelector:@selector(dataQueueReachMaxCapacity)])
+            {
+                [self.delegate dataQueueReachMaxCapacity];
+            }
+        }
         [_condition wait];
     }
     
@@ -101,7 +109,7 @@
     
     _nBytes += (int)1.5*nBytes;
     
-    [_condition signal];
+//    [_condition signal];
     [_condition unlock];
 }
 
@@ -109,9 +117,16 @@
 {
     yuv420_picture* pic = 0;
     [_condition lock];
-    while(_picCount == 0)
+//    while(_picCount == 0)
+//    {
+//        [_condition wait];
+//    }
+    
+    if(_picCount == 0)
     {
-        [_condition wait];
+        [_condition unlock];
+        [self setShouldCache];
+        return 0;
     }
     
     pic = _head_pic;
@@ -124,12 +139,22 @@
     {
         _tail_pic = 0;
         _nBytes = 0;
+        [self setShouldCache];
     }
     
     [_condition signal];
     [_condition unlock];
     
     return pic;
+}
+
+- (void)setShouldCache
+{
+    self.bShouldCache = YES;
+    if([self.delegate respondsToSelector:@selector(dataQueueStartCacheData)])
+    {
+        [self.delegate dataQueueStartCacheData];
+    }
 }
 
 - (void)freePicture:(yuv420_picture *)pic

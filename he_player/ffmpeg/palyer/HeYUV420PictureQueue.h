@@ -8,6 +8,7 @@
 
 #import <UIKit/UIKit.h>
 #import "libavformat/avformat.h"
+#import "HEDataQeueuProtocol.h"
 
 typedef struct yuv420_picture{
     unsigned char* y;
@@ -22,8 +23,10 @@ typedef struct yuv420_picture{
 
 @property(nonatomic, assign)NSInteger maxBytes;
 @property(nonatomic, assign)int nCacheCount;
+@property(atomic, assign)BOOL bShouldCache;
+@property(nonatomic, weak)id<HeDataQueueDelegate> delegate;
 
-+ (instancetype)pictureQueueWithStorageSize:(CGSize)size;
++ (instancetype)pictureQueueWithStorageSize:(CGSize)size delegate:(id<HeDataQueueDelegate>)delegate;
 - (void)addPictureWithFrame:(AVFrame*)frame;
 - (yuv420_picture*)getPicture;
 - (void)freePicture:(yuv420_picture*)pic;

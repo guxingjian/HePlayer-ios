@@ -210,6 +210,7 @@
 		C972D40120F769EE00FD6661 /* libstdc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libstdc++.tbd"; path = "usr/lib/libstdc++.tbd"; sourceTree = SDKROOT; };
 		C972D40320F76A0900FD6661 /* libbz2.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libbz2.tbd; path = usr/lib/libbz2.tbd; sourceTree = SDKROOT; };
 		C972D40520F7742C00FD6661 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		C996744C2147653100E816BF /* HEDataQeueuProtocol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HEDataQeueuProtocol.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -247,6 +248,7 @@
 				C956FF9B211038AA008E647E /* HePlayer.m */,
 				C956FF9C211038AA008E647E /* HeMediaAnalyser.h */,
 				C956FF91211038AA008E647E /* HeMediaAnalyser.m */,
+				C996744C2147653100E816BF /* HEDataQeueuProtocol.h */,
 				C956FF92211038AA008E647E /* HeAudioDataQueue.h */,
 				C956FF9A211038AA008E647E /* HeAudioDataQueue.m */,
 				C956FF99211038AA008E647E /* HeYUV420PictureQueue.h */,
