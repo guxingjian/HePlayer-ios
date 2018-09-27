@@ -144,7 +144,7 @@
 - (void)setShouldCache
 {
     if(self.bShouldCache)
-    return ;
+        return ;
     
     self.bShouldCache = YES;
     if([self.delegate respondsToSelector:@selector(dataQueueStartCacheData)])

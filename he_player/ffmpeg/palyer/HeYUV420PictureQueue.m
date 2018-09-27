@@ -122,7 +122,7 @@
 //        [_condition wait];
 //    }
     
-    if(_picCount == 0)
+    if(_picCount == 0 || self.bShouldCache)
     {
         [_condition unlock];
         [self setShouldCache];
@@ -150,6 +150,8 @@
 
 - (void)setShouldCache
 {
+    if(self.bShouldCache)
+        return ;
     self.bShouldCache = YES;
     if([self.delegate respondsToSelector:@selector(dataQueueStartCacheData)])
     {
