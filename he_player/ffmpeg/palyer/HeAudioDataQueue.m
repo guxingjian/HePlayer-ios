@@ -117,11 +117,11 @@
 //        [_condition wait];
 //    }
     
-    if(_bufCount == 0)
+    if(_bufCount == 0 || self.bShouldCache)
     {
         [_condition unlock];
         [self setShouldCache];
-        return 0;
+        return [self idleAudioBuffer];
     }
 
     audio_buffer* head = _head_buf;
@@ -143,6 +143,9 @@
 
 - (void)setShouldCache
 {
+    if(self.bShouldCache)
+    return ;
+    
     self.bShouldCache = YES;
     if([self.delegate respondsToSelector:@selector(dataQueueStartCacheData)])
     {

@@ -432,13 +432,13 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     {
         [self playoutVideoAndAudio];
     }
-    else
-    {
-        void *p = (__bridge void *) self;
-        for(int i = 0 ; i < BUFFER_COUNT ; i ++){
-            HandleOutputBufferCallBack(p, self->queueRef, self->buffers[i]);
-        }
-    }
+//    else
+//    {
+//        void *p = (__bridge void *) self;
+//        for(int i = 0 ; i < BUFFER_COUNT ; i ++){
+//            HandleOutputBufferCallBack(p, self->queueRef, self->buffers[i]);
+//        }
+//    }
     
     AudioQueueStart(queueRef, 0);
 }
@@ -569,12 +569,12 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     [self.delegate mediaAnalyser:self decodeVideo:pic frameSize:CGSizeMake(_pVideoCodecCtx->width, _pVideoCodecCtx->height)];
     
     //计算帧率，平均每帧间隔时间
-    double step = 0.41;
+    double step = 0.041;
     if(self->frame_last_pts != 0)
     {
         step = pic->pts - self->frame_last_pts;
         self->frame_timer += step;
-        double diff = self->frame_timer - self->_audio_clock;
+        double diff = self->frame_timer - self.audio_clock;
         
         if(diff < -0.03)
         {
@@ -600,12 +600,11 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     if (!refreshTimer) {
         //            refreshTimer = [NSTimer timerWithTimeInterval:step target:self selector:@selector(showVideoFrame) userInfo:nil repeats:YES];
         refreshTimer = [CADisplayLink displayLinkWithTarget:self selector:@selector(showVideoFrame)];
-        refreshTimer.preferredFramesPerSecond = 60*step;
         NSRunLoop* threadRunloop = [NSRunLoop currentRunLoop];
         [refreshTimer addToRunLoop:threadRunloop forMode:NSRunLoopCommonModes];
         [threadRunloop run];
     }
-    refreshTimer.preferredFramesPerSecond = 60*step;
+    refreshTimer.preferredFramesPerSecond = 1/step;
     self.videoRefreshTimer = refreshTimer;
     
     [_pictureQueue freePicture:pic];
@@ -630,9 +629,6 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)pickAudioPacketWithBuffer:(AudioQueueBufferRef)bufferRef
 {
-    if(self.bPause)
-        return ;
-    
     if(self.audioClearFlag)
     {
         [self clearAudioBuffer];
@@ -645,14 +641,16 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     }
     
     audio_buffer* audioBuffer = [_audioBufferQueue getBuffer];
-    if(!audioBuffer)
-        return ;
     CGFloat fTime = audioBuffer->pts;
     memcpy(bufferRef->mAudioData, audioBuffer->buffer, audioBuffer->size);
     bufferRef->mAudioDataByteSize = (UInt32)audioBuffer->size;
     AudioQueueEnqueueBuffer(queueRef, bufferRef, 0, nil);
     [_audioBufferQueue freeBuffer:audioBuffer];
-    self.audio_clock = fTime;
+    
+    if(fTime != 0)
+    {
+        self.audio_clock = fTime;
+    }
 }
 
 - (void)seekForward

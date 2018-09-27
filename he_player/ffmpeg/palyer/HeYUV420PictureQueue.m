@@ -37,7 +37,7 @@
         _nW = size.width;
         _nH = size.height;
         _condition = [[NSCondition alloc] init];
-        self.maxBytes = 1024*1024*500;
+        self.maxBytes = 1024*1024*50;
         self.delegate = delegate;
     }
     return self;
