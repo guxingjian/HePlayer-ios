@@ -83,7 +83,7 @@
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
 {
     CGPoint pt = [gestureRecognizer locationInView:self.renderView];
-    if(pt.y > self.progressView.frame.origin.y)
+    if(pt.y > self.progressView.frame.origin.y - 10)
         return NO;
     return YES;
 }

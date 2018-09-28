@@ -50,6 +50,7 @@
 
 - (void)clear
 {
+    NSLog(@"audio queue clear start");
     [self.condition lock];
     
     audio_buffer* buf = 0;
@@ -67,6 +68,7 @@
     
     [self.condition signal];
     [self.condition unlock];
+    NSLog(@"audio queue clear end");
 }
 
 - (audio_buffer *)idleAudioBuffer
@@ -89,6 +91,7 @@
                 [self.delegate dataQueueReachMaxCapacity];
             }
         }
+        
         [_condition wait];
     }
     

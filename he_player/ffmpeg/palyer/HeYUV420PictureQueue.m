@@ -55,7 +55,10 @@
                 [self.delegate dataQueueReachMaxCapacity];
             }
         }
+        
+        NSLog(@"addPictureWithFrame wait start");
         [_condition wait];
+        NSLog(@"addPictureWithFrame wait end");
     }
     
     int nBytes = _nW*_nH;
@@ -171,6 +174,7 @@
 
 - (void)clear
 {
+    NSLog(@"picture queue clear start");
     [_condition lock];
     
     yuv420_picture* pic = 0;
@@ -188,6 +192,7 @@
     
     [_condition signal];
     [_condition unlock];
+    NSLog(@"picture queue clear end");
 }
 
 @end

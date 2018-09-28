@@ -36,6 +36,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 @property(nonatomic, strong)NSString* strPath;
 @property(nonatomic, assign)BOOL bShouldConvert;
 @property(nonatomic, assign)BOOL bPause;
+@property(nonatomic, assign)BOOL bCachePause;
 @property(nonatomic, assign)BOOL bStop;
 @property(nonatomic, assign)BOOL bIsAnalysing;
 @property(atomic, assign)double audio_clock;
@@ -430,7 +431,9 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     self.cacheInterval = 5;
     _pictureQueue.bShouldCache = NO;
     _audioBufferQueue.bShouldCache = NO;
-    self.bPause = NO;
+    self.bCachePause = NO;
+    
+    NSLog(@"stopCache");
     
     if(!self.hasVideo)
     {
@@ -533,7 +536,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)showVideoFrame
 {
-    if(self.bPause)
+    if(self.bPause || self.bCachePause)
         return ;
     
     static CADisplayLink* refreshTimer = nil;
@@ -548,6 +551,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     
     if(self.pictureClearFlag)
     {
+        NSLog(@"pictureClearFlag");
         [self clearPictureBuffer];
         self.pictureClearFlag = NO;
     }
@@ -642,7 +646,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     }
     
     audio_buffer* audioBuffer = nil;
-    if(self.bPause)
+    if(self.bPause || self.bCachePause)
     {
         audioBuffer = [_audioBufferQueue idleAudioBuffer];
     }
@@ -718,7 +722,11 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)dataQueueStartCacheData
 {
-    [self pause];
+    if(![_pictureQueue bShouldCache] || ![_audioBufferQueue bShouldCache])
+        return ;
+    
+    self.bCachePause = YES;
+    AudioQueuePause(queueRef);
     self.cacheStartTime = self.audio_clock;
 }
 
