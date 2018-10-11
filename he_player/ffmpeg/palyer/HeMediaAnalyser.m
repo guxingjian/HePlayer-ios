@@ -26,11 +26,6 @@
 
 static uint64_t out_channel_layout = AV_CH_LAYOUT_STEREO;//声道格式
 
-static HeMediaAnalyser* producerAnalyzer = nil;
-static HeMediaAnalyser* customerAnalyzer = nil;
-
-void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBufferRef inBuffer);
-
 @interface HeMediaAnalyser()<HeDataQueueDelegate>
 
 @property(nonatomic, strong)NSString* strPath;
@@ -47,7 +42,8 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 @property(nonatomic, assign)double cacheInterval;
 @property(atomic, assign)BOOL hasVideo;
 @property(atomic, assign)BOOL hasAudio;
-
+@property(nonatomic, strong)HeYUV420PictureQueue* pictureQueue;
+@property(nonatomic, strong)HeAudioDataQueue* audioBufferQueue;
 
 @end
 
@@ -61,7 +57,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     AVFrame* _pFrame;
     AVFrame* _yuvFrame;
     struct SwsContext* swsContext;
-    HeYUV420PictureQueue* _pictureQueue;
+    
 
     double video_clock;
     double frame_timer;
@@ -73,7 +69,6 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     int _audioStream;
     AudioQueueRef queueRef;
     AudioQueueBufferRef buffers[BUFFER_COUNT];
-    HeAudioDataQueue* _audioBufferQueue;
     SwrContext* swrContext;
     dispatch_queue_t _audioDispatchQueue;
     
@@ -83,12 +78,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)dealloc
 {
-    AudioQueueDispose(queueRef, YES);
-    for(NSInteger i = 0; i < BUFFER_COUNT; ++ i)
-    {
-        AudioQueueFreeBuffer(queueRef, buffers[i]);
-    }
-    
+    NSLog(@"analyser dealloc");
     avformat_close_input(&_formatContext);
     avcodec_free_context(&_pVideoCodecCtx);
     av_frame_free(&_pFrame);
@@ -101,6 +91,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     avcodec_free_context(&_pAudioCodecCtx);
     swr_free(&swrContext);
     av_frame_free(&_audioFrame);
+//    AudioQueueDispose(queueRef, YES);
 }
 
 - (instancetype)initWithMediaPath:(NSString *)path delegate:(id<HeMediaAnalyserDelegate>)delegate
@@ -225,7 +216,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     
     __weak typeof(self) weakSelf = self;
     AudioQueueNewOutputWithDispatchQueue(&queueRef, &des, 0, _audioDispatchQueue, ^(AudioQueueRef  _Nonnull inAQ, AudioQueueBufferRef  _Nonnull inBuffer) {
-        [weakSelf pickAudioPacketWithBuffer:inBuffer];
+        [weakSelf pickAudioPacketWithQueue:inAQ Buffer:inBuffer];
     });
     
     for(int i = 0 ; i < BUFFER_COUNT ; i ++){
@@ -234,13 +225,13 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     
     Float32 gain = 5.0;
     AudioQueueSetParameter(queueRef, kAudioQueueParam_Volume, gain);
-    _audioBufferQueue = [[HeAudioDataQueue alloc] initWithBufferSize:nBufferSize delegate:self];
+    self.audioBufferQueue = [[HeAudioDataQueue alloc] initWithBufferSize:nBufferSize delegate:self];
     [self setupSwrContext];
     
     AVRational timeBase = _formatContext->streams[_audioStream]->time_base;
     _audioTimeBase = (CGFloat)timeBase.num/timeBase.den;
     
-    _audioBufferQueue.nCacheBytes = (out_nb_channels*16*out_sample_rate)/8*PRECACHE_SECONDS;
+    self.audioBufferQueue.nCacheBytes = (out_nb_channels*16*out_sample_rate)/8*PRECACHE_SECONDS;
 }
 
 - (void)setupSwrContext
@@ -308,23 +299,23 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         self.bShouldConvert = YES;
     }
     self.bCanPlay = YES;
-    _pictureQueue = [HeYUV420PictureQueue pictureQueueWithStorageSize:CGSizeMake(pVideoCodecCtx->width, pVideoCodecCtx->height) delegate:self];
+    self.pictureQueue = [HeYUV420PictureQueue pictureQueueWithStorageSize:CGSizeMake(pVideoCodecCtx->width, pVideoCodecCtx->height) delegate:self];
     
     AVRational timeBase = _formatContext->streams[_videoStream]->time_base;
     _videoTimeBase = (CGFloat)timeBase.num/timeBase.den;
     
     int nRate = av_q2d(_pVideoCodecCtx->framerate);
-    _pictureQueue.nCacheCount = nRate*PRECACHE_SECONDS;
+    self.pictureQueue.nCacheCount = nRate*PRECACHE_SECONDS;
 }
 
 - (void)clearAudioBuffer
 {
-    [_audioBufferQueue clear];
+    [self.audioBufferQueue clear];
 }
                    
 - (void)clearPictureBuffer
 {
-    [_pictureQueue clear];
+    [self.pictureQueue clear];
 }
 
 - (void)analyseVideoAndAudio
@@ -332,9 +323,10 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     AVPacket packet;
     while (1)
     {
-        if(!producerAnalyzer.bCanPlay)
+        if(!self.bCanPlay)
         {
-            producerAnalyzer = nil;
+            [self handVideoPacket:nil];
+            [self handAudioPacket:nil];
             return ;
         }
         
@@ -387,6 +379,11 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)handVideoPacket:(AVPacket*)packet
 {
+    if(!packet)
+    {
+        [self.pictureQueue addPictureWithFrame:nil];
+    }
+    
     int ret = avcodec_send_packet(_pVideoCodecCtx, packet);
     if(ret != 0)
         return ;
@@ -399,12 +396,12 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     {
         sws_scale(swsContext, (const unsigned char* const*)_pFrame->data, _pFrame->linesize, 0, _pVideoCodecCtx->height,
                   _yuvFrame->data, _yuvFrame->linesize);
-        [_pictureQueue addPictureWithFrame:_yuvFrame];
+        [self.pictureQueue addPictureWithFrame:_yuvFrame];
         frame = _yuvFrame;
     }
     else
     {
-        [_pictureQueue addPictureWithFrame:_pFrame];
+        [self.pictureQueue addPictureWithFrame:_pFrame];
         frame = _pFrame;
     }
     
@@ -414,7 +411,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)cacheVideoAndAudioWithPts:(double)pts
 {
-    if(!_pictureQueue.bShouldCache && !_audioBufferQueue.bShouldCache)
+    if(!self.pictureQueue.bShouldCache && !self.audioBufferQueue.bShouldCache)
         return ;
     
     double fInterval = pts - self.cacheStartTime;
@@ -429,24 +426,25 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 - (void)stopCache
 {
     self.cacheInterval = 5;
-    _pictureQueue.bShouldCache = NO;
-    _audioBufferQueue.bShouldCache = NO;
+    self.pictureQueue.bShouldCache = NO;
+    self.audioBufferQueue.bShouldCache = NO;
     self.bCachePause = NO;
     
-    NSLog(@"stopCache");
+//    NSLog(@"stopCache");
     
     if(!self.hasVideo)
     {
         __weak typeof(self) ws = self;
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            [ws showVideoFrame];
+            @autoreleasepool {
+                [ws showVideoFrame];
+            }
         });
     }
     if(!self.hasAudio)
     {
-        void *p = (__bridge void *) self;
         for(int i = 0 ; i < BUFFER_COUNT ; i ++){
-            HandleOutputBufferCallBack(p, self->queueRef, self->buffers[i]);
+            [self pickAudioPacketWithQueue:self->queueRef Buffer:self->buffers[i]];
         }
     }
     
@@ -455,6 +453,11 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)handAudioPacket:(AVPacket*)packet
 {
+    if(!packet)
+    {
+        [self.audioBufferQueue putBuffer:nil];
+    }
+    
     int nRet = avcodec_send_packet(_pAudioCodecCtx, packet);
     if(nRet < 0)
         return ;
@@ -465,14 +468,14 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         int out_count = out_nb_samples;
         int len2;
         
-        audio_buffer* audioBuf = [_audioBufferQueue idleAudioBuffer];
+        audio_buffer* audioBuf = [self.audioBufferQueue idleAudioBuffer];
         audioBuf->pts = _audioFrame->pts*_audioTimeBase;
         len2 = swr_convert(swrContext, &audioBuf->buffer, out_count, inBuffer, _audioFrame->nb_samples);
         if (len2 < 0) {
             return ;
         }
         
-        [_audioBufferQueue putBuffer:audioBuf];
+        [self.audioBufferQueue putBuffer:audioBuf];
         if (len2 == out_count) {
             if (swr_init(swrContext) < 0)
             {
@@ -500,15 +503,12 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     if(!self.bIsAnalysing)
     {
         __weak typeof(self) ws = self;
-        
-        producerAnalyzer = self;
-        customerAnalyzer = self;
         self.bStop = NO;
-        
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            [ws analyseVideoAndAudio];
+            @autoreleasepool {
+                [ws analyseVideoAndAudio];
+            }
         });
-        
         [self playoutVideoAndAudio];
         self.bIsAnalysing = YES;
     }
@@ -520,12 +520,13 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 {
      __weak typeof(self) ws = self;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        [ws showVideoFrame];
+        @autoreleasepool {
+            [ws showVideoFrame];
+        }
     });
     
-    void *p = (__bridge void *) self;
     for(int i = 0 ; i < BUFFER_COUNT ; i ++){
-        HandleOutputBufferCallBack(p, self->queueRef, self->buffers[i]);
+        [self pickAudioPacketWithQueue:self->queueRef Buffer:self->buffers[i]];
     }
 }
 
@@ -540,14 +541,6 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         return ;
     
     static CADisplayLink* refreshTimer = nil;
-    if(!customerAnalyzer.bCanPlay)
-    {
-        [refreshTimer invalidate];
-        refreshTimer = nil;
-        [_pictureQueue clear];
-        customerAnalyzer = nil;
-        return ;
-    }
     
     if(self.pictureClearFlag)
     {
@@ -564,11 +557,19 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         return ;
     }
     
-    yuv420_picture* pic = [_pictureQueue getPicture];
+    yuv420_picture* pic = [self.pictureQueue getPicture];
     if(!pic)
     {
         return ;
     }
+    if(!pic->y && !pic->u && !pic->v)
+    {
+        [refreshTimer invalidate];
+        refreshTimer = nil;
+        self.pictureQueue.stop = YES;
+        return ;
+    }
+    
     pic->pts = pic->pts*_videoTimeBase;
     
     [self.delegate mediaAnalyser:self decodeVideo:pic frameSize:CGSizeMake(_pVideoCodecCtx->width, _pVideoCodecCtx->height)];
@@ -580,7 +581,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         step = pic->pts - self->frame_last_pts;
         self->frame_timer += step;
         double diff = self->frame_timer - self.audio_clock;
-        
+
         if(diff < -0.03)
         {
             step = step - 0.03;
@@ -591,7 +592,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         }
     }
     self->frame_last_pts = pic->pts;
-    
+
     if(step < 0.012)
     {
         step = 0.012;
@@ -601,18 +602,18 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
         step = 0.07;
     }
     NSLog(@"step: %f", step);
+    step = 1/step;
     
     if (!refreshTimer) {
-        //            refreshTimer = [NSTimer timerWithTimeInterval:step target:self selector:@selector(showVideoFrame) userInfo:nil repeats:YES];
         refreshTimer = [CADisplayLink displayLinkWithTarget:self selector:@selector(showVideoFrame)];
         NSRunLoop* threadRunloop = [NSRunLoop currentRunLoop];
         [refreshTimer addToRunLoop:threadRunloop forMode:NSRunLoopCommonModes];
         [threadRunloop run];
     }
-    refreshTimer.preferredFramesPerSecond = 1/step;
+    refreshTimer.preferredFramesPerSecond = step;
     self.hasVideo = YES;
     
-    [_pictureQueue freePicture:pic];
+    [self.pictureQueue freePicture:pic];
 }
 
 - (void)pause
@@ -632,7 +633,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 //    avformat_close_input(&_formatContext);
 }
 
-- (void)pickAudioPacketWithBuffer:(AudioQueueBufferRef)bufferRef
+- (void)pickAudioPacketWithQueue:(AudioQueueRef)queue Buffer:(AudioQueueBufferRef)bufferRef
 {
     if(self.audioClearFlag)
     {
@@ -648,18 +649,25 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
     audio_buffer* audioBuffer = nil;
     if(self.bPause || self.bCachePause)
     {
-        audioBuffer = [_audioBufferQueue idleAudioBuffer];
+        audioBuffer = [self.audioBufferQueue idleAudioBuffer];
     }
     else
     {
-        audioBuffer = [_audioBufferQueue getBuffer];
+        audioBuffer = [self.audioBufferQueue getBuffer];
+        if(!audioBuffer->buffer)
+        {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                AudioQueueDispose(queue, YES);
+            });
+            return ;
+        }
     }
     
     CGFloat fTime = audioBuffer->pts;
     memcpy(bufferRef->mAudioData, audioBuffer->buffer, audioBuffer->size);
     bufferRef->mAudioDataByteSize = (UInt32)audioBuffer->size;
     AudioQueueEnqueueBuffer(queueRef, bufferRef, 0, nil);
-    [_audioBufferQueue freeBuffer:audioBuffer];
+    [self.audioBufferQueue freeBuffer:audioBuffer];
     
     if(fTime != 0)
     {
@@ -722,7 +730,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)dataQueueStartCacheData
 {
-    if(![_pictureQueue bShouldCache] || ![_audioBufferQueue bShouldCache])
+    if(![self.pictureQueue bShouldCache] || ![self.audioBufferQueue bShouldCache])
         return ;
     
     self.bCachePause = YES;
@@ -732,7 +740,7 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 - (void)dataQueueReachMaxCapacity
 {
-    if(!_pictureQueue.bShouldCache && !_audioBufferQueue.bShouldCache)
+    if(!self.pictureQueue.bShouldCache && !self.audioBufferQueue.bShouldCache)
         return ;
     
     [self stopCache];
@@ -740,11 +748,11 @@ void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBuf
 
 @end
 
-void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBufferRef inBuffer)
-{
-    HeMediaAnalyser* analyser = (__bridge HeMediaAnalyser*)aqData;
-    if(!analyser)
-        return ;
-    [analyser pickAudioPacketWithBuffer:inBuffer];
-}
+//void HandleOutputBufferCallBack (void *aqData, AudioQueueRef inAQ, AudioQueueBufferRef inBuffer)
+//{
+//    HeMediaAnalyser* analyser = (__bridge HeMediaAnalyser*)aqData;
+//    if(!analyser)
+//        return ;
+//    [analyser pickAudioPacketWithBuffer:inBuffer];
+//}
 

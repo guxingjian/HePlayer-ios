@@ -27,6 +27,8 @@
 
 - (void)dealloc
 {
+    NSLog(@"picture queue dealloc");
+    self.delegate = nil;
     [self clear];
 }
 
@@ -45,6 +47,9 @@
 
 - (void)addPictureWithFrame:(AVFrame *)frame
 {
+    if(self.stop)
+        return ;
+    
     [_condition lock];
     while(_nBytes >= self.maxBytes)
     {
@@ -56,47 +61,54 @@
             }
         }
         
-        NSLog(@"addPictureWithFrame wait start");
         [_condition wait];
-        NSLog(@"addPictureWithFrame wait end");
     }
     
-    int nBytes = _nW*_nH;
     yuv420_picture* pic = av_mallocz(sizeof(yuv420_picture));
-    
-    unsigned char* y = av_mallocz(nBytes);
-    for(int i = 0; i < _nH; i++)
+    if(frame)
     {
-        memcpy(y+_nW*i,
-               frame->data[0]+frame->linesize[0]*i,
-               _nW);
+        pic->y_len = frame->linesize[0];
+        int nBytes = pic->y_len*_nH;
+        
+        unsigned char* y = av_mallocz(nBytes);
+        for(int i = 0; i < _nH; i++)
+        {
+            memcpy(y+pic->y_len*i,
+                   frame->data[0]+pic->y_len*i,
+                   pic->y_len);
+        }
+        
+        //    memcpy(y, frame->data[0], nBytes);
+        
+        pic->u_len = frame->linesize[1];
+        unsigned char* u = av_mallocz(pic->u_len*_nH/2);
+        for(int i = 0; i < _nH/2; i++)
+        {
+            memcpy(u+pic->u_len*i,
+                   frame->data[1]+pic->u_len*i,
+                   pic->u_len);
+        }
+        //    memcpy(u, frame->data[1], nBytes/4);
+        
+        pic->v_len = frame->linesize[2];
+        unsigned char* v = av_mallocz(pic->v_len*_nH/2);
+        for(int i = 0; i < _nH/2; i++)
+        {
+            memcpy(v+pic->v_len*i,
+                   frame->data[2]+pic->v_len*i,
+                   pic->v_len);
+        }
+        
+        //    memcpy(v, frame->data[2], nBytes/4);
+        pic->y = y;
+        pic->u = u;
+        pic->v = v;
+        pic->pts = frame->pts;
+        pic->nBytes = (int)1.5*nBytes;
+        
+        _nBytes += (int)1.5*nBytes;
     }
     
-//    memcpy(y, frame->data[0], nBytes);
-    
-    unsigned char* u = av_mallocz(nBytes/4);
-    for(int i = 0; i < _nH/2; i++)
-    {
-        memcpy(u+_nW/2*i,
-               frame->data[1]+frame->linesize[1]*i,
-               _nW/2);
-    }
-//    memcpy(u, frame->data[1], nBytes/4);
-    
-    unsigned char* v = av_mallocz(nBytes/4);
-    for(int i = 0; i < _nH/2; i++)
-    {
-        memcpy(v+_nW/2*i,
-               frame->data[2]+frame->linesize[2]*i,
-               _nW/2);
-    }
-    
-//    memcpy(v, frame->data[2], nBytes/4);
-    pic->y = y;
-    pic->u = u;
-    pic->v = v;
-    pic->pts = frame->pts;
-    pic->nBytes = (int)1.5*nBytes;
     if(!_head_pic)
     {
         _head_pic = pic;
@@ -109,8 +121,6 @@
     
     _picCount ++;
 //    NSLog(@"pic count: %d", _picCount);
-    
-    _nBytes += (int)1.5*nBytes;
     
 //    [_condition signal];
     [_condition unlock];
@@ -174,7 +184,6 @@
 
 - (void)clear
 {
-    NSLog(@"picture queue clear start");
     [_condition lock];
     
     yuv420_picture* pic = 0;
@@ -192,7 +201,6 @@
     
     [_condition signal];
     [_condition unlock];
-    NSLog(@"picture queue clear end");
 }
 
 @end

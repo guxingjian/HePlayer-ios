@@ -53,7 +53,7 @@
 {
     if(CGSizeEqualToSize(size, CGSizeMake(SCREEN_MIN, SCREEN_MAX)))
     {
-        self.playView.frame = CGRectMake(0, 100, SCREEN_MIN, 300);
+        self.playView.frame = CGRectMake(0, 0, SCREEN_MIN, SCREEN_MAX);
     }
     else if(CGSizeEqualToSize(size, CGSizeMake(SCREEN_MAX, SCREEN_MIN)))
     {

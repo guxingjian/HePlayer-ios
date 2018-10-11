@@ -17,6 +17,7 @@
 
 @property(nonatomic, weak)UIView* renderView;
 @property(nonatomic, strong)EAGLContext* glContext;
+@property(nonatomic, strong)EAGLContext* oldContext;
 @property(nonatomic, strong)HeMediaAnalyser* mediaAnalyser;
 @property(nonatomic, strong)NSTimer* timer;
 @property(nonatomic, strong)UIImageView* playImage;
@@ -38,6 +39,7 @@
 
 - (void)dealloc
 {
+    [EAGLContext setCurrentContext:self.oldContext];
     self.mediaAnalyser.delegate = nil;
     self.mediaAnalyser.bCanPlay = NO;
 }
@@ -168,6 +170,7 @@
 
 - (void)setGLContext
 {
+    self.oldContext = [EAGLContext currentContext];
     EAGLContext* context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
     self.glContext = context;
     [self useContext];
@@ -261,6 +264,10 @@
 
 - (void)mediaAnalyser:(HeMediaAnalyser *)analyser decodeVideo:(yuv420_picture *)picture frameSize:(CGSize)size
 {
+    [self useContext];
+    glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);
+    
     if(self.renderStorageChanged)
     {
         dispatch_sync(dispatch_get_main_queue(), ^{
@@ -270,11 +277,7 @@
             [self.progressView  adjustFrame];
         });
     }
-    
-    [self useContext];
-    glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, renderBuffer);
-    
+
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
     
@@ -298,18 +301,18 @@
         
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture_y);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, ybits);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, picture->y_len, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, ybits);
         
         glUniform1i(yIndex, 0);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture_u);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width/2, height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, ubits);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, picture->u_len, height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, ubits);
         
         glUniform1i(uIndex, 1);
         
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, texture_v);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width/2, height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, vbits);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, picture->v_len, height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, vbits);
         
         glUniform1i(vIndex, 2);
         

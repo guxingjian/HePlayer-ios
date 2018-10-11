@@ -25,7 +25,10 @@
 
 - (void)dealloc
 {
+    NSLog(@"audio queue dealloc");
+    self.delegate = nil;
     [self clear];
+//    [self clearBuffer];
 }
 
 - (instancetype)initWithBufferSize:(NSInteger)size delegate:(id<HeDataQueueDelegate>)delegate
@@ -48,11 +51,8 @@
     return _condition;
 }
 
-- (void)clear
+- (void)clearBuffer
 {
-    NSLog(@"audio queue clear start");
-    [self.condition lock];
-    
     audio_buffer* buf = 0;
     while(_head_buf)
     {
@@ -65,10 +65,16 @@
     _tail_buf = nil;
     _bufCount = 0;
     _nBytes = 0;
+}
+
+- (void)clear
+{
+    [self.condition lock];
+    
+    [self clearBuffer];
     
     [self.condition signal];
     [self.condition unlock];
-    NSLog(@"audio queue clear end");
 }
 
 - (audio_buffer *)idleAudioBuffer
@@ -81,6 +87,9 @@
 
 - (void)putBuffer:(audio_buffer *)buffer
 {
+    if(self.stop)
+        return ;
+    
     [_condition lock];
     while(_nBytes >= self.maxBytes)
     {
@@ -92,7 +101,13 @@
             }
         }
         
+        NSLog(@"putBuffer");
         [_condition wait];
+    }
+    
+    if(!buffer)
+    {
+        buffer = av_mallocz(sizeof(audio_buffer));
     }
     
     if(!_head_buf)

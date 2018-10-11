@@ -12,8 +12,11 @@
 
 typedef struct yuv420_picture{
     unsigned char* y;
+    int y_len;
     unsigned char* u;
+    int u_len;
     unsigned char* v;
+    int v_len;
     struct yuv420_picture* next;
     double pts;
     int nBytes;
@@ -25,6 +28,7 @@ typedef struct yuv420_picture{
 @property(nonatomic, assign)int nCacheCount;
 @property(atomic, assign)BOOL bShouldCache;
 @property(nonatomic, weak)id<HeDataQueueDelegate> delegate;
+@property(atomic, assign)BOOL stop;
 
 + (instancetype)pictureQueueWithStorageSize:(CGSize)size delegate:(id<HeDataQueueDelegate>)delegate;
 - (void)addPictureWithFrame:(AVFrame*)frame;

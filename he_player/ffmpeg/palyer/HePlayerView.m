@@ -13,6 +13,7 @@
 @interface HePlayerView()
 
 @property(nonatomic, strong)HePlayer* player;
+@property(nonatomic, strong)AVAudioSessionCategory oldCategory;
 
 @end
 
@@ -43,6 +44,8 @@
 - (void)setupPlayerWithPath:(NSString*)path
 {
     AVAudioSession* session = [AVAudioSession sharedInstance];
+
+    self.oldCategory =  [session category];
     [session setCategory:AVAudioSessionCategoryPlayback error:nil];
     [session setActive:YES error:nil];
     
@@ -60,6 +63,9 @@
 
 - (void)dealloc
 {
+    AVAudioSession* session = [AVAudioSession sharedInstance];
+    [session setCategory:self.oldCategory error:nil];
+//    [session setActive:NO error:nil];
     self.player = nil;
 }
 

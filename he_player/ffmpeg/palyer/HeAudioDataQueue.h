@@ -23,6 +23,7 @@ typedef struct audio_buffer{
 @property(nonatomic, assign)int nCacheBytes;
 @property(atomic, assign)BOOL bShouldCache;
 @property(nonatomic, weak)id<HeDataQueueDelegate> delegate;
+@property(atomic, assign)BOOL stop;
 
 - (instancetype)initWithBufferSize:(NSInteger)size delegate:(id<HeDataQueueDelegate>)delegate;
 
