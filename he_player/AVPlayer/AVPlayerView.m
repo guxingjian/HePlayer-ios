@@ -58,6 +58,7 @@
     }
     AVPlayerItem* item = [[AVPlayerItem alloc] initWithAsset:asset];
     AVPlayer* player = [[AVPlayer alloc] initWithPlayerItem:item];
+    player.automaticallyWaitsToMinimizeStalling = NO;
     self.player = player;
     AVPlayerLayer* playLayer = [AVPlayerLayer playerLayerWithPlayer:player];
     playLayer.frame = self.bounds;
